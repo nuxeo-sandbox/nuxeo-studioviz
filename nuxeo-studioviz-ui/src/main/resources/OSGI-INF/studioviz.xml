@@ -1,4 +1,4 @@
-<component name="synonyms.contrib">
+<component name="studioviz.contrib">
   <require>org.nuxeo.runtime.started</require>
   <extension point="actions" target="org.nuxeo.ecm.platform.actions.ActionService">
       <action id="StudioConfigurationManager" label="Studio Configuration" link="/studioviz-view/studioviz.xhtml" order="25">
