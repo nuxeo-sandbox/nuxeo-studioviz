@@ -331,9 +331,9 @@ public class GenerateGraph {
 	    	}
 	    }
 
-		schemas += " [style=invis];\n}";
-		docTypes += " [style=invis];\n}";
-		facets += " [style=invis];\n}";
+		schemas += (nbSchemas>1?" [style=invis]":"")+";\n}";
+		docTypes += (nbDocTypes>1?" [style=invis]":"")+";\n}";
+		facets += (nbFacets>1?" [style=invis]":"")+";\n}";
 
 	    result += (nbSchemas>0?schemas:"")+"\n"+(nbDocTypes>0?docTypes:"")+"\n"+(nbFacets>0?facets:"")+"\n";
     	result += "}";
@@ -501,6 +501,17 @@ public class GenerateGraph {
 	    						if(!layout.getValue().startsWith("layout@") && !typeId.endsWith("_cv")){
 	    							String formLayoutName = layout.getValue().split("@")[0];	    							
 	    							if(!formLayouts.contains(formLayoutName+"_fl")){
+	    								
+	    								if(!docTypesList.contains(typeId)){
+	    			    					result += typeId+ " [URL=\"https://connect.nuxeo.com/nuxeo/site/studio/ide?project="+studioProjectName+"#@feature:"+typeId+".doc\", label=\""+typeId+"\",shape=box,fontcolor=white,color=\"#1CA5FC\",fillcolor=\"#1CA5FC\",style=\"filled\"];\n";
+	    			    					if(nbDocTypes >0){
+	    			    						docTypes += "->";
+	    			    					}
+	    									docTypes += typeId;
+	    									docTypesList.add(typeId);
+	    									nbDocTypes ++;
+	    			    				}
+	    								
 	    								result += typeId+"->"+formLayoutName+"_fl;\n";
     									result += formLayoutName+ "_fl [URL=\"https://connect.nuxeo.com/nuxeo/site/studio/ide?project="+studioProjectName+"#@feature:"+formLayoutName+".layout\", label=\""+formLayoutName+"\",shape=box,fontcolor=white,color=\"#FC4835\",fillcolor=\"#FC4835\",style=\"filled\"];\n";
 	    		    					if(nbFormLayouts >0){
@@ -520,10 +531,10 @@ public class GenerateGraph {
 	    	}
 	    }
 
-		tabs += " [style=invis];\n}";
-		docTypes += " [style=invis];\n}";
-		contentViews +=  " [style=invis];\n}";
-		formLayouts +=  " [style=invis];\n}";
+		tabs += (nbTabs>1?" [style=invis]":"")+";\n}";
+		docTypes += (nbDocTypes>1?" [style=invis]":"")+";\n}";
+		contentViews +=  (nbContentViews>1?" [style=invis]":"")+";\n}";
+		formLayouts +=  (nbFormLayouts>1?" [style=invis]":"")+";\n}";
 	    result += (nbTabs>0?tabs:"")+"\n"+(nbDocTypes>0?docTypes:"")+"\n"+(nbContentViews>0?contentViews:"")+"\n"+(nbFormLayouts>0?formLayouts:"")+"\n";
     	result += "}";
 
@@ -740,9 +751,9 @@ public class GenerateGraph {
 	    	}
 	    }
 
-		userActions += " [style=invis];\n}";
-		automationChainsAndScripting += " [style=invis];\n}";
-		events += " [style=invis];\n}";
+		userActions += (nbUserActions>1?" [style=invis]":"")+";\n}";
+		automationChainsAndScripting += (nbAutomationChains>1?" [style=invis]":"")+";\n}";
+		events += (nbEvents>1?" [style=invis]":"")+";\n}";
 
 
 	    result += (nbUserActions>0 ? userActions: "")+"\n"+((nbAutomationChains+ nbAutomationScripting >0)? automationChainsAndScripting:"")+"\n"+(nbEvents>0? events: "")+"\n";
