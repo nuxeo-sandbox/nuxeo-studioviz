@@ -14,10 +14,12 @@
   </style>
   <nx-connection id="nx"></nx-connection>
   <nuxeo-operation id="GenerateGraph" op="GenerateGraph" params="" response="{{response}}"></nuxeo-operation>
-  <div class="bubbleBox">
+  <div id="modelFullscreen" class="bubbleBox">
       <h3>Data Model</h3>
-      <div id="modelFullscreen" class="bubbleHeader" style="overflow-x:scroll;">
-        <paper-button id="modelFullscreen_button" raised on-tap="_toggleFullScreen" data-arg="model">Full Screen</paper-button>
+      <div class="bubbleHeader">
+      <paper-button id="modelFullscreen_button" raised on-tap="_toggleFullScreen" data-arg="model">Full Screen</paper-button>
+      </div>
+      <div class="bubbleHeader" style="overflow-x:scroll;">
         <table width="100%">
         <tr>
           <td class="center"/>
@@ -35,10 +37,12 @@
       </div>
   </div>
 
-  <div class="bubbleBox">
+  <div id="viewFullscreen" class="bubbleBox">
       <h3>View</h3>
-      <div id="viewFullscreen" class="bubbleHeader" style="overflow-x:scroll;">
-        <paper-button id="viewFullscreen_button" raised on-tap="_toggleFullScreen" data-arg="view">Full Screen</paper-button>
+      <div class="bubbleHeader">
+      <paper-button id="viewFullscreen_button" raised on-tap="_toggleFullScreen" data-arg="view">Full Screen</paper-button>
+      </div>
+      <div class="bubbleHeader" style="overflow-x:scroll;">
         <table width="100%">
         <tr>
           <td class="center"/>
@@ -56,10 +60,12 @@
       </div>
   </div>
 
-  <div class="bubbleBox">
+  <div id="businessRulesFullscreen" class="bubbleBox">
       <h3>Business Rules</h3>
-      <div id="businessRulesFullscreen" class="bubbleHeader" style="overflow-x:scroll;">
-        <paper-button id="businessRulesFullscreen_button" raised on-tap="_toggleFullScreen" data-arg="businessRules">Full Screen</paper-button>
+      <div class="bubbleHeader">
+      <paper-button id="businessRulesFullscreen_button" raised on-tap="_toggleFullScreen" data-arg="businessRules">Full Screen</paper-button>
+      </div>
+      <div class="bubbleHeader" style="overflow-x:scroll;">
         <table width="100%">
         <tr>
           <td class="center"/>

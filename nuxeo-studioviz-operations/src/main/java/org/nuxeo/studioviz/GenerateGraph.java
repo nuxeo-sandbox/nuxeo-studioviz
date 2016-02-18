@@ -46,6 +46,7 @@ import org.nuxeo.jaxb.Component.Extension.Schema;
 import org.nuxeo.jaxb.Component.Extension.Type.ContentViews;
 import org.nuxeo.jaxb.Component.Extension.Type.ContentViews.ContentView;
 import org.nuxeo.jaxb.Component.Extension.Type.Layouts;
+import org.nuxeo.jaxb.Component.Extension.Type.Layouts.Layout;
 import org.nuxeo.runtime.api.Framework;
 
 
@@ -494,8 +495,22 @@ public class GenerateGraph {
 	    					}
 	    						    					
 	    					//Handle Form Layouts
-	    					List<Layouts> layouts = typeList.getLayouts();
-	    					for(Layouts)
+	    					List<Layouts> layoutList = type.getLayouts();
+	    					for(Layouts layouts: layoutList){
+	    						Layout layout = layouts.getLayout();
+	    						if(!layout.getValue().startsWith("layout@") && !typeId.endsWith("_cv")){
+	    							String formLayoutName = layout.getValue().split("@")[0];	    							
+	    							if(!formLayouts.contains(formLayoutName+"_fl")){
+	    								result += typeId+"->"+formLayoutName+"_fl;\n";
+    									result += formLayoutName+ "_fl [URL=\"https://connect.nuxeo.com/nuxeo/site/studio/ide?project="+studioProjectName+"#@feature:"+formLayoutName+".layout\", label=\""+formLayoutName+"\",shape=box,fontcolor=white,color=\"#FC4835\",fillcolor=\"#FC4835\",style=\"filled\"];\n";
+	    		    					if(nbFormLayouts >0){
+	    		    						formLayouts += "->";
+	    		    					}
+	    		    					formLayouts += formLayoutName+"_fl";
+	    		    					nbFormLayouts ++;
+    								}
+	    						}
+	    					}
 	    					
 	    				}
 	    			}catch(Exception e){
@@ -508,7 +523,8 @@ public class GenerateGraph {
 		tabs += " [style=invis];\n}";
 		docTypes += " [style=invis];\n}";
 		contentViews +=  " [style=invis];\n}";
-	    result += (nbTabs>0?tabs:"")+"\n"+(nbDocTypes>0?docTypes:"")+"\n"+(nbContentViews>0?contentViews:"")+"\n";
+		formLayouts +=  " [style=invis];\n}";
+	    result += (nbTabs>0?tabs:"")+"\n"+(nbDocTypes>0?docTypes:"")+"\n"+(nbContentViews>0?contentViews:"")+"\n"+(nbFormLayouts>0?formLayouts:"")+"\n";
     	result += "}";
 
 	    writeToFile(studiovizFolderPath+File.separator+File.separator+"inputView.dot", result);
