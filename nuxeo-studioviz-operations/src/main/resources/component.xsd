@@ -26,7 +26,13 @@
 										                            <xs:element name="layouts" maxOccurs="unbounded">
 										                               	<xs:complexType>
 										                                    <xs:sequence>
-										                                    	<xs:element name="layout" type="xs:string"></xs:element>
+										                                    	<xs:element name="layout">
+										                                    		<xs:complexType>
+													                                	<xs:simpleContent>
+																							<xs:extension base="xs:string"></xs:extension>
+																						</xs:simpleContent>										                                     		
+													                                </xs:complexType>
+										                                    	</xs:element>
 										                                    </xs:sequence>
 										                                    <xs:attribute name="mode" type="xs:string"></xs:attribute>
 										                            	</xs:complexType>

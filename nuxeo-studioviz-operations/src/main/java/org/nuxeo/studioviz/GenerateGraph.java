@@ -45,6 +45,7 @@ import org.nuxeo.jaxb.Component.Extension.Handler;
 import org.nuxeo.jaxb.Component.Extension.Schema;
 import org.nuxeo.jaxb.Component.Extension.Type.ContentViews;
 import org.nuxeo.jaxb.Component.Extension.Type.ContentViews.ContentView;
+import org.nuxeo.jaxb.Component.Extension.Type.Layouts;
 import org.nuxeo.runtime.api.Framework;
 
 
@@ -375,6 +376,11 @@ public class GenerateGraph {
 	 		 	   "	node [style=filled];\n"+
 	 		 	   " 	label = \"Content Views\";\n"+
 	 		 	   "  	color=\"#31A3C5\";\n";
+		
+		String formLayouts = "subgraph cluster_3 {\n"+
+	 		 	   "	node [style=filled];\n"+
+	 		 	   " 	label = \"Form Layouts\";\n"+
+	 		 	   "  	color=\"#FC4835\";\n";
 
 		result = "digraph V {\n"+
 		    "graph [fontname = \"helvetica\", fontsize=11];\n"+
@@ -385,6 +391,7 @@ public class GenerateGraph {
 		int nbTabs = 0;
 		int nbDocTypes = 0;
 		int nbContentViews = 0;
+		int nbFormLayouts = 0;
 		ArrayList<String> docTypesList = new ArrayList<String>();
 		for(Extension extension:extensions){
 			String point = extension.getPoint();
@@ -485,7 +492,11 @@ public class GenerateGraph {
 	    							}
 	    						}
 	    					}
-
+	    						    					
+	    					//Handle Form Layouts
+	    					List<Layouts> layouts = typeList.getLayouts();
+	    					for(Layouts)
+	    					
 	    				}
 	    			}catch(Exception e){
 	    				logger.error("Error when getting document type", e);
