@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component name="nuxeo-studio-graphviz-command-contrib" version="1.0.0">
+	<require>org.nuxeo.runtime.started</require>
+	<extension
+	    target="org.nuxeo.ecm.platform.commandline.executor.service.CommandLineExecutorComponent"
+	    point="command">
+			<command enabled="true" name="dot">
+	          	<commandLine>dot</commandLine>
+	          	<!--commandLine>/usr/local/bin/dot</commandLine-->
+		        <parameterString> -T#{format} #{inputFile} -o #{outputFile}</parameterString>
+		        <winParameterString> -T#{format} #{inputFile} -o #{outputFile}</winParameterString>
+		        <installationDirective>You need to install GraphViz from http://www.graphviz.org</installationDirective>
+		    </command>
+	</extension>
+
+	<extension
+	    target="org.nuxeo.ecm.platform.commandline.executor.service.CommandLineExecutorComponent"
+	    point="command">
+			<command enabled="true" name="copy-studio-jar">
+	          	<commandLine>cp</commandLine>
+	          	<!--winCommand>copy</winCommand-->
+		        <parameterString> #{studioJar} #{dest}</parameterString>
+		        <winParameterString> #{studioJar} #{dest}</winParameterString>
+		        <installationDirective>Command cp not found</installationDirective>
+		    </command>
+	</extension>
+	
+</component>

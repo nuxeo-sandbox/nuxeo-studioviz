@@ -1,0 +1,80 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.nuxeo</groupId>
+    <artifactId>nuxeo-ecm</artifactId>
+    <version>8.1</version>
+  </parent>
+  <groupId>org.nuxeo.studioviz</groupId>
+  <artifactId>nuxeo-studioviz-parent</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <name>Nuxeo StudioViz Parent</name>
+  <description>Nuxeo StudioViz POM</description>
+  <packaging>pom</packaging>
+
+  <properties>
+      <nuxeo.project.version>${project.version}</nuxeo.project.version>
+      <nuxeo.version>8.1</nuxeo.version>
+      <nuxeo.distribution.version>8.1</nuxeo.distribution.version>
+      <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+      <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+  </properties>
+
+  <modules>
+    <module>nuxeo-studioviz-operations</module>
+    <module>nuxeo-studioviz-ui</module>
+    <module>nuxeo-studioviz-mp</module>
+  </modules>
+
+  <dependencyManagement>
+      <dependencies>
+          <dependency>
+              <groupId>org.nuxeo.ecm.distribution</groupId>
+              <artifactId>nuxeo-distribution</artifactId>
+              <scope>import</scope>
+              <type>pom</type>
+              <version>${nuxeo.version}</version>
+          </dependency>
+          <dependency>
+              <groupId>org.nuxeo.studioviz</groupId>
+              <artifactId>nuxeo-grapviz-operations</artifactId>
+              <version>${nuxeo.project.version}</version>
+          </dependency>
+          <dependency>
+              <groupId>org.nuxeo.studioviz</groupId>
+              <artifactId>nuxeo-studioviz-ui</artifactId>
+              <version>${nuxeo.project.version}</version>
+          </dependency>
+          <dependency>
+              <groupId>org.nuxeo.studioviz</groupId>
+              <artifactId>nuxeo-studioviz-mp</artifactId>
+              <version>${nuxeo.project.version}</version>
+          </dependency>
+      </dependencies>
+  </dependencyManagement>
+
+  <repositories>
+    <repository>
+      <id>public</id>
+      <url>http://maven.nuxeo.org/nexus/content/groups/public</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>public-snapshot</id>
+      <url>http://maven.nuxeo.org/nexus/content/groups/public-snapshot</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <updatePolicy>always</updatePolicy>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+
+</project>

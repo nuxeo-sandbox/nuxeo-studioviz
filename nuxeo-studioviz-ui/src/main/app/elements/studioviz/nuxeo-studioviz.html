@@ -1,0 +1,192 @@
+<dom-module id="nuxeo-studioviz" assetpath="nuxeo-studioviz/">
+  <template>
+  <style>
+    paper-button {
+      background: #FFFFFF;
+      color: black;
+    }
+    .center {
+        text-align: center;
+    }
+    .left {
+        text-align: left;
+    }
+  </style>
+  <nx-connection id="nx"></nx-connection>
+  <nuxeo-operation id="GenerateGraph" op="GenerateGraph" params="" response="{{response}}"></nuxeo-operation>
+  <div class="bubbleBox">
+      <h3>Data Model</h3>
+      <div id="modelFullscreen" class="bubbleHeader" style="overflow-x:scroll;">
+        <paper-button id="modelFullscreen_button" raised on-tap="_toggleFullScreen" data-arg="model">Full Screen</paper-button>
+        <table width="100%">
+        <tr>
+          <td class="center"/>
+              <template is="dom-if" if="{{_isDefined(response)}}">
+                <img src="{{imgModelUrl}}" usemap="#M" />
+                <div inner-h-t-m-l="{{cmapxModel}}"></div>
+              </template>
+              <template is="dom-if" if="{{!_isDefined(response)}}">
+                <img src="/nuxeo/img/big_loading.gif" >
+              </template>
+          </td>
+        </tr>
+        </tbody>
+        </table>
+      </div>
+  </div>
+
+  <div class="bubbleBox">
+      <h3>View</h3>
+      <div id="viewFullscreen" class="bubbleHeader" style="overflow-x:scroll;">
+        <paper-button id="viewFullscreen_button" raised on-tap="_toggleFullScreen" data-arg="view">Full Screen</paper-button>
+        <table width="100%">
+        <tr>
+          <td class="center"/>
+              <template is="dom-if" if="{{_isDefined(response)}}">
+                <img src="{{imgViewUrl}}" usemap="#V" />
+                <div inner-h-t-m-l="{{cmapxView}}"></div>
+              </template>
+              <template is="dom-if" if="{{!_isDefined(response)}}">
+                <img src="/nuxeo/img/big_loading.gif" >
+              </template>
+          </td>
+        </tr>
+        </tbody>
+        </table>
+      </div>
+  </div>
+
+  <div class="bubbleBox">
+      <h3>Business Rules</h3>
+      <div id="businessRulesFullscreen" class="bubbleHeader" style="overflow-x:scroll;">
+        <paper-button id="businessRulesFullscreen_button" raised on-tap="_toggleFullScreen" data-arg="businessRules">Full Screen</paper-button>
+        <table width="100%">
+        <tr>
+          <td class="center"/>
+              <template is="dom-if" if="{{_isDefined(response)}}">
+                <img src="{{imgBusinessRulesUrl}}" usemap="#BL" />
+                <div inner-h-t-m-l="{{cmapxBusinessRules}}"></div>
+              </template>
+              <template is="dom-if" if="{{!_isDefined(response)}}">
+                <img src="/nuxeo/img/big_loading.gif" >
+              </template>
+          </td>
+        </tr>
+        </tbody>
+        </table>
+      </div>
+  </div>
+</template>
+<script>
+    Polymer({
+      is: 'nuxeo-studioviz',
+      created: function() {
+
+      },
+      properties: {
+        params: {
+          type:Object,
+          value: {}
+        },cmapxModel: {
+          type:String,
+          value: ''
+        },cmapxView: {
+          type:String,
+          value: ''
+        },cmapxBusinessRules: {
+          type:String,
+          value: ''
+        },
+        imgModelUrl: {
+          type:String,
+          value: ''
+        },
+        imgViewUrl: {
+          type:String,
+          value: ''
+        },
+        imgBusinessRulesUrl: {
+          type:String,
+          value: ''
+        },
+        isModelFullScreenMode:  {
+          type:Boolean,
+          value: false
+        },
+        isViewFullScreenMode:  {
+          type:Boolean,
+          value: false
+        },
+        isBusinessRulesFullScreenMode:  {
+          type:Boolean,
+          value: false
+        }
+      },
+
+      ready: function () {
+        this.$.GenerateGraph.execute();
+        isModelFullScreenMode = false;
+        isViewFullScreenMode = false;
+        isBusinessRulesFullScreenMode = false;
+      },
+
+      _refresh: function(){
+        this.$.GenerateGraph.execute();
+      },
+      _isDefined: function(response) {
+        if ((typeof response !== 'undefined') && (response !== '') && (response !== null)) {
+          json = JSON.parse(response);
+          //console.log(decodeURIComponent(json.view).replace(new RegExp("\\+", 'g'), " "));
+          this.cmapxView = decodeURIComponent(json.view).replace(new RegExp("\\+", 'g'), " ");
+          this.cmapxModel = decodeURIComponent(json.model).replace(new RegExp("\\+", 'g'), " ");
+          this.cmapxBusinessRules = decodeURIComponent(json.businessRules).replace(new RegExp("\\+", 'g'), " ");
+          this.imgModelUrl = "/nuxeo/studioviz/imgModel.png?random="+Math.random();
+          this.imgViewUrl = "/nuxeo/studioviz/imgView.png?random="+Math.random();
+          this.imgBusinessRulesUrl = "/nuxeo/studioviz/imgBusinessRules.png?random="+Math.random();
+          return true;
+        } else {
+          return false;
+        }
+      },
+      _toggleFullScreen: function(e){
+        var arg = e.target.getAttribute('data-arg');
+        if(arg === "model"){
+          if(!isModelFullScreenMode){
+            jQuery("#modelFullscreen").css({"position":"absolute"}).css({"z-index":"1041"}).css({"left":"0px"}).css({"top":"-50px"}).css({"margin-bottom":"-40px"}).css({"background":"white"}).css({"width":"100%"}).css({"height":parseInt(jQuery(document).height())+50});
+            jQuery("#modelFullscreen_button").html("Close");
+            isModelFullScreenMode = true;
+            window.scrollTo(0, 0);
+          }else{
+            jQuery("#modelFullscreen").css({"position":""}).css({"z-index":""}).css({"left":""}).css({"top":""}).css({"margin-bottom":""}).css({"background":""}).css({"width":""}).css({"height":""});
+            jQuery("#modelFullscreen_button").html("Full Screen");
+            isModelFullScreenMode = false;
+          }
+        }
+        if(arg === "view"){
+          if(!isViewFullScreenMode){
+            jQuery("#viewFullscreen").css({"position":"absolute"}).css({"z-index":"1041"}).css({"left":"0px"}).css({"top":"-50px"}).css({"margin-bottom":"-40px"}).css({"background":"white"}).css({"width":"100%"}).css({"height":parseInt(jQuery(document).height())+50});
+            jQuery("#viewFullscreen_button").html("Close");
+            isViewFullScreenMode = true;
+            window.scrollTo(0, 0);
+          }else{
+            jQuery("#viewFullscreen").css({"position":""}).css({"z-index":""}).css({"left":""}).css({"top":""}).css({"margin-bottom":""}).css({"background":""}).css({"width":""}).css({"height":""});
+            jQuery("#viewFullscreen_button").html("Full Screen");
+            isViewFullScreenMode = false;
+          }
+        }
+        if(arg === "businessRules"){
+          if(!isBusinessRulesFullScreenMode){
+            jQuery("#businessRulesFullscreen").css({"position":"absolute"}).css({"z-index":"1041"}).css({"left":"0px"}).css({"top":"-50px"}).css({"margin-bottom":"-40px"}).css({"background":"white"}).css({"width":"100%"}).css({"height":parseInt(jQuery(document).height())+50});
+            jQuery("#businessRulesFullscreen_button").html("Close");
+            isBusinessRulesFullScreenMode = true;
+            window.scrollTo(0, 0);
+          }else{
+            jQuery("#businessRulesFullscreen").css({"position":""}).css({"z-index":""}).css({"left":""}).css({"top":""}).css({"margin-bottom":""}).css({"background":""}).css({"width":""}).css({"height":""});
+            jQuery("#businessRulesFullscreen_button").html("Full Screen");
+            isBusinessRulesFullScreenMode = false;
+          }
+        }
+      }
+    });
+</script>
+</dom-module>

@@ -1,0 +1,8 @@
+<component name="org.nuxeo.studioviz.GenerateGraph">
+
+  <extension target="org.nuxeo.ecm.core.operation.OperationServiceComponent"
+    point="operations" >
+      <operation class="org.nuxeo.studioviz.GenerateGraph" />
+   </extension>
+
+</component>
