@@ -11,9 +11,9 @@ There are 3 types of graphs:
 
 ## GraphViz
 You need to install GraphViz (http://www.graphviz.org/Download.php) in order to generate the graphics.
--For MacOs: http://www.graphviz.org/Download_macos.php
--For Linux: sudo apt-get install graphviz
--For Windows: http://www.graphviz.org/Download_windows.php
+- For MacOs: http://www.graphviz.org/Download_macos.php
+- For Linux: sudo apt-get install graphviz
+- For Windows: http://www.graphviz.org/Download_windows.php
 
 ## Build
 ### Install dependencies
