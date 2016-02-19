@@ -4,14 +4,14 @@
 This plug-in enables the visualization of the studio configuration based on graphviz.
 
 ## List of Items Displayed
-
-- Automation chains
-- Automation scripting
-- User Actions
-- Event Handlers
+There are 3 types of graphs:
+- The Data Model containing : Document Types, Schemas and Facets
+- The View for Content Views, Forms Layouts and Tabs related to the Document Types
+- The Business Rules showing the relations between User Actions, Automation Chains/Scriptings and Event Handlers
 
 ## GraphViz
-You need to install GraphViz (http://www.graphviz.org/) in order to generate the graphics.
+You need to install GraphViz (http://www.graphviz.org/Download.php) in order to generate the graphics.
+
 
 ## Build
 ### Install dependencies
