@@ -1,5 +1,5 @@
 /**
- *
+ * 
  */
 
 package org.nuxeo.studioviz;
@@ -8,7 +8,8 @@ import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.security.CodeSource;
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -16,27 +17,31 @@ import org.nuxeo.common.Environment;
 import org.nuxeo.ecm.automation.core.Constants;
 import org.nuxeo.ecm.automation.core.annotations.Operation;
 import org.nuxeo.ecm.automation.core.annotations.OperationMethod;
+import org.nuxeo.ecm.automation.core.annotations.Param;
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.impl.blob.StringBlob;
 import org.nuxeo.ecm.platform.commandline.executor.service.CommandLineExecutorComponent;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.studioviz.helper.GraphHelper;
 
-import com.google.gson.Gson;
-
-
 /**
  * @author mgena
  */
-@Operation(id=GenerateGraph.ID, category=Constants.CAT_EXECUTION, label="GenerateGraph", description="")
-public class GenerateGraph {
+@Operation(id=GenerateContextualGraph.ID, category=Constants.CAT_EXECUTION, label="GenerateContextualGraph", description="")
+public class GenerateContextualGraph {
 
-    public static final String ID = "GenerateGraph";
-    private Log logger = LogFactory.getLog(GenerateGraph.class);
+    public static final String ID = "GenerateContextualGraph";
+    private Log logger = LogFactory.getLog(GenerateContextualGraph.class);
+    
+    @Param(name = "graphType")
+    protected String graphType;
+    
+    @Param(name = "nodes")
+    protected String nodes;
 
     @OperationMethod
     public Blob run() {
-    	String studioJar = "";
+       	String studioJar = "";
     	String mapModel = "";
     	String mapView = "";
     	String mapBusinessRules = "";
@@ -63,24 +68,24 @@ public class GenerateGraph {
 		    gh.extractXMLFromStudioJar(studioJar, studiovizFolderPath);
 		    String studioProjectName = studioJar.replace(".jar", "");
 		    String destinationPath = nuxeoHomePath+File.separator+"nxserver"+File.separator+"nuxeo.war"+File.separator+"studioviz";
-
-		    mapModel = gh.generateModelGraphFromXML(studioProjectName, destinationPath, studiovizFolderPath, commandLineExecutorComponent, null);
-
-		    mapView = gh.generateViewGraphFromXML(studioProjectName, destinationPath, studiovizFolderPath, commandLineExecutorComponent, null);
-
-		    mapBusinessRules = gh.generateBusinessRulesGraphFromXML(studioProjectName, destinationPath, studiovizFolderPath, commandLineExecutorComponent, null);
-
+		    String [] nodeArray = nodes.split(",");
+		    List<String> nodeList = Arrays.asList(nodeArray);
+		    if(("model").equals(graphType)){
+		    	mapModel = gh.generateModelGraphFromXML(studioProjectName, destinationPath, studiovizFolderPath, commandLineExecutorComponent, nodeList);
+		    }else if(("view").equals(graphType)){
+		    	mapView = gh.generateViewGraphFromXML(studioProjectName, destinationPath, studiovizFolderPath, commandLineExecutorComponent, nodeList);
+		    }else if("businessRules".equals(graphType)){
+		    	mapBusinessRules = gh.generateBusinessRulesGraphFromXML(studioProjectName, destinationPath, studiovizFolderPath, commandLineExecutorComponent, nodeList);
+		    }		    
 	    } catch (Exception e) {
 	      logger.error("Exception while ",e);
 	    }
     	try {
-    		ArrayList<String> automationList = gh.getAutomationList();
-    		String json = new Gson().toJson(automationList);
-			return new StringBlob("{\"model\":\""+URLEncoder.encode(mapModel,"UTF-8")+"\", \"view\": \""+URLEncoder.encode(mapView,"UTF-8")+"\", \"businessRules\": \""+URLEncoder.encode(mapBusinessRules,"UTF-8")+"\", \"automationList\": "+json+"}");
+			return new StringBlob("{\"model\":\""+URLEncoder.encode(mapModel,"UTF-8")+"\", \"view\": \""+URLEncoder.encode(mapView,"UTF-8")+"\", \"businessRules\": \""+URLEncoder.encode(mapBusinessRules,"UTF-8")+"\"}");
 		} catch (UnsupportedEncodingException e) {
 			logger.error("Error while encoding result", e);
 			return null;
-		}
-    }
+		} 
+    }    
 
 }

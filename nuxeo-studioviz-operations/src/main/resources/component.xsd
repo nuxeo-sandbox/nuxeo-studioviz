@@ -8,6 +8,12 @@
                             <xs:element name="extension" maxOccurs="unbounded">
                                    <xs:complexType>
                                           <xs:sequence>
+                                          		<xs:element name="template-resource" maxOccurs="unbounded">
+				                                   <xs:complexType>
+				                                          <xs:attribute name="id" type="xs:string"></xs:attribute>
+				                                          <xs:attribute name="path" type="xs:string"></xs:attribute>
+				                                      </xs:complexType>
+				                                </xs:element>
                                           		<xs:element name="type" maxOccurs="unbounded">
 										              <xs:complexType>
 										                     <xs:sequence>

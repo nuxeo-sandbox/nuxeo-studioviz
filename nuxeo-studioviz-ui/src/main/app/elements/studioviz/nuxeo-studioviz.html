@@ -11,9 +11,13 @@
     .left {
         text-align: left;
     }
+    .top {
+        vertical-align: top;
+    }
   </style>
   <nx-connection id="nx"></nx-connection>
   <nuxeo-operation id="GenerateGraph" op="GenerateGraph" params="" response="{{response}}"></nuxeo-operation>
+  <nuxeo-operation id="GenerateContextualGraph" op="GenerateContextualGraph" params="{{params}}" response="{{ctxResponse}}"></nuxeo-operation>
   <div id="modelFullscreen" class="bubbleBox">
 
       <div class="bubbleHeader">
@@ -63,15 +67,22 @@
   </div>
 
   <div id="businessRulesFullscreen" class="bubbleBox">
-
       <div class="bubbleHeader">
         <h3>Business Rules</h3>
         <paper-button id="businessRulesFullscreen_button" raised on-tap="_toggleFullScreen" data-arg="businessRules">Full Screen</paper-button>
       </div>
       <div class="bubbleHeader" style="overflow-x:scroll;">
         <table width="100%">
-        <tr>
-          <td class="center"/>
+          <tr>
+            <td style=""><paper-checkbox checked on-change="_checkUncheckAll"><span style="white-space:nowrap;"><b>Automation Chains & Scriptings</b></span></paper-checkbox></td>
+          </tr>
+          <tr>
+            <td class="top">
+              <template is="dom-repeat" items="{{automationList}}" as="automation">
+                  <paper-checkbox checked on-change="_generateContextualGraph" graphType="businessRules" value="{{automation}}">{{automation}}</paper-checkbox><br/>
+              </template>
+            </td>
+            <td class="center"/>
               <template is="dom-if" if="{{_isDefined(response)}}">
                 <img src="{{imgBusinessRulesUrl}}" usemap="#BL" />
                 <div inner-h-t-m-l="{{cmapxBusinessRules}}"></div>
@@ -79,9 +90,8 @@
               <template is="dom-if" if="{{!_isDefined(response)}}">
                 <img src="/nuxeo/img/big_loading.gif" >
               </template>
-          </td>
-        </tr>
-        </tbody>
+            </td>
+          </tr>
         </table>
       </div>
   </div>
@@ -129,6 +139,19 @@
         isBusinessRulesFullScreenMode:  {
           type:Boolean,
           value: false
+        },
+        automationList: {
+          type:Array,
+          value: []
+        },
+        selectedAutomationList: {
+          type:Array,
+          value: []
+        },
+        ctxResponse:{
+          type: Object,
+          notify: true,
+          observer: '_ctxGraphGenerated'
         }
       },
 
@@ -145,7 +168,8 @@
       _isDefined: function(response) {
         if ((typeof response !== 'undefined') && (response !== '') && (response !== null)) {
           json = JSON.parse(response);
-          //console.log(decodeURIComponent(json.view).replace(new RegExp("\\+", 'g'), " "));
+          this.automationList = json.automationList;
+          this.selectedAutomationList = json.automationList;
           this.cmapxView = decodeURIComponent(json.view).replace(new RegExp("\\+", 'g'), " ");
           this.cmapxModel = decodeURIComponent(json.model).replace(new RegExp("\\+", 'g'), " ");
           this.cmapxBusinessRules = decodeURIComponent(json.businessRules).replace(new RegExp("\\+", 'g'), " ");
@@ -156,6 +180,46 @@
         } else {
           return false;
         }
+      },
+      _generateContextualGraph: function(e){
+          var graphType = e.target.getAttribute('graphType');
+          this.params.graphType = "businessRules";
+
+          if(e.target.checked) {
+              this.selectedAutomationList.pushIfNotExist(e.target.value);
+              //console.log(this.selectedAutomationList);
+          }else{
+              this.selectedAutomationList.remove(e.target.value);
+              //console.log(this.selectedAutomationList);
+          }
+          this.params.nodes = this.selectedAutomationList.toString();
+          this.imgBusinessRulesUrl = "/nuxeo/img/big_loading.gif";
+          this.$.GenerateContextualGraph.execute();
+
+      },
+      _ctxGraphGenerated: function(){
+        if (this.ctxResponse) {
+          //console.log(this.ctxResponse);
+          json = JSON.parse(this.ctxResponse);
+          this.cmapxBusinessRules = decodeURIComponent(json.businessRules).replace(new RegExp("\\+", 'g'), " ");
+          this.imgBusinessRulesUrl = "/nuxeo/studioviz/imgBusinessRules.png?random="+Math.random();
+        }
+      },
+      _checkUncheckAll: function(e){
+          var graphType = e.target.getAttribute('graphType');
+          this.params.graphType = "businessRules";
+
+          if(e.target.checked) {
+              this.selectedAutomationList = this.automationList;
+              this.params.nodes = this.selectedAutomationList.toString();
+              this.imgBusinessRulesUrl = "/nuxeo/img/big_loading.gif";
+              this.$.GenerateContextualGraph.execute();
+
+          }else{
+              this.selectedAutomationList=[];
+              this.params.nodes = "";
+              this.imgBusinessRulesUrl = "";
+          }
       },
       _toggleFullScreen: function(e){
         var arg = e.target.getAttribute('data-arg');
@@ -197,5 +261,25 @@
         }
       }
     });
+
+    Array.prototype.remove = function() {
+      var what, a = arguments, L = a.length, ax;
+      while (L && this.length) {
+          what = a[--L];
+          while ((ax = this.indexOf(what)) !== -1) {
+              this.splice(ax, 1);
+          }
+      }
+      return this;
+    };
+
+    Array.prototype.pushIfNotExist = function (item){
+    if(this.indexOf(item) == -1) {
+    //if(jQuery.inArray(item, this) == -1) {
+        this.push(item);
+        return true;
+    }
+    return false;
+}
 </script>
 </dom-module>
