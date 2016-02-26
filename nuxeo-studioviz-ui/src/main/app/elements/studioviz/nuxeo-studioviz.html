@@ -210,12 +210,14 @@
           this.params.graphType = "businessRules";
 
           if(e.target.checked) {
+              jQuery("paper-checkbox").each(function(){jQuery(this).attr("checked","")});
               this.selectedAutomationList = this.automationList;
               this.params.nodes = this.selectedAutomationList.toString();
               this.imgBusinessRulesUrl = "/nuxeo/img/big_loading.gif";
               this.$.GenerateContextualGraph.execute();
 
           }else{
+              jQuery("paper-checkbox").each(function(){jQuery(this).removeAttr("checked")});
               this.selectedAutomationList=[];
               this.params.nodes = "";
               this.imgBusinessRulesUrl = "";
