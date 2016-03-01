@@ -427,13 +427,14 @@ public class GraphHelper {
 	    			    				}
 
 	    								String contentViewName = contentView.getValue();
-	    								result += typeId+"->"+contentViewName+";\n";
-	    								if(!contentViews.contains(contentViewName)){
-	    									result += contentViewName+ " [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+contentViewName+".contentView\", label=\""+contentViewName+"\",shape=box,fontcolor=white,color=\"#31A3C5\",fillcolor=\"#31A3C5\",style=\"filled\"];\n";
+	    								String cleanedContentViewName = cleanUpForDot(contentView.getValue());
+	    								result += typeId+"->"+cleanedContentViewName+";\n";
+	    								if(!contentViews.contains(cleanedContentViewName)){
+	    									result += cleanedContentViewName+ " [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+contentViewName+".contentView\", label=\""+contentViewName+"\",shape=box,fontcolor=white,color=\"#31A3C5\",fillcolor=\"#31A3C5\",style=\"filled\"];\n";
 		    		    					if(nbContentViews >0){
 		    		    						contentViews += "->";
 		    		    					}
-		    		    					contentViews += contentViewName;
+		    		    					contentViews += cleanedContentViewName;
 		    		    					nbContentViews ++;
 	    								}
 	    							}
@@ -445,8 +446,9 @@ public class GraphHelper {
 	    					for(Layouts layouts: layoutList){
 	    						Layout layout = layouts.getLayout();
 	    						if(!layout.getValue().startsWith("layout@") && !typeId.endsWith("_cv")){
-	    							String formLayoutName = layout.getValue().split("@")[0];	    							
-	    							if(!formLayouts.contains(formLayoutName+"_fl")){
+	    							String formLayoutName = layout.getValue().split("@")[0];
+	    							String cleanedFormLayoutName = cleanUpForDot(layout.getValue().split("@")[0]);
+	    							if(!formLayouts.contains(cleanedFormLayoutName+"_fl")){
 	    								
 	    								if(!docTypesList.contains(typeId)){
 	    			    					result += typeId+ " [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+typeId+".doc\", label=\""+typeId+"\",shape=box,fontcolor=white,color=\"#1CA5FC\",fillcolor=\"#1CA5FC\",style=\"filled\"];\n";
@@ -458,12 +460,12 @@ public class GraphHelper {
 	    									nbDocTypes ++;
 	    			    				}
 	    								
-	    								result += typeId+"->"+formLayoutName+"_fl;\n";
-    									result += formLayoutName+ "_fl [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+formLayoutName+".layout\", label=\""+formLayoutName+"\",shape=box,fontcolor=white,color=\"#FC4835\",fillcolor=\"#FC4835\",style=\"filled\"];\n";
+	    								result += typeId+"->"+cleanedFormLayoutName+"_fl;\n";
+    									result += cleanedFormLayoutName+ "_fl [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+formLayoutName+".layout\", label=\""+formLayoutName+"\",shape=box,fontcolor=white,color=\"#FC4835\",fillcolor=\"#FC4835\",style=\"filled\"];\n";
 	    		    					if(nbFormLayouts >0){
 	    		    						formLayouts += "->";
 	    		    					}
-	    		    					formLayouts += formLayoutName+"_fl";
+	    		    					formLayouts += cleanedFormLayoutName+"_fl";
 	    		    					nbFormLayouts ++;
     								}
 	    						}
@@ -588,7 +590,7 @@ public class GraphHelper {
 				    					nbAutomationChains ++;
 				    				}			    					
 			    				}
-			    				result += cleanedActionId+"_action [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+action.getId()+".action\", label=\""+action.getId()+"\n"+(action.getLabel()!= null ? action.getLabel():"")+"\",shape=box,fontcolor=white,color=\"#00ADFF\",fillcolor=\"#00ADFF\",style=\"filled\"];\n";
+			    				result += cleanedActionId+"_action [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+action.getId()+".action\", label=\""+action.getId()+"\n"+(action.getLabel()!= null ? action.getLabel().replace("\"", "\\\""):"")+"\",shape=box,fontcolor=white,color=\"#00ADFF\",fillcolor=\"#00ADFF\",style=\"filled\"];\n";
 				    			if(nbUserActions >0){
 				    				userActions += "->";
 				    			}
@@ -900,9 +902,9 @@ public class GraphHelper {
 						    				}
 					    				}
 					    				
-					    				/*if(nodeList == null || (nodeList != null && nodeList.contains(outputChain)) || (nodeList != null && nodeList.contains(inputChain))){
-					    					
-					    				}*/
+					    				if(nodeList != null && nodeList.isEmpty()){
+					    					continue;
+					    				}
 					    				
 					    				if(nodeList == null || (nodeList != null && nodeList.contains(outputChain)) || (nodeList != null && nodeList.contains(inputChain))){
 						    				if(!wfTasks.contains(task)){
