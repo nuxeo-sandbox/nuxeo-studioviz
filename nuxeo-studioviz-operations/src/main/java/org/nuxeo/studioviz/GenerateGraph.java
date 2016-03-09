@@ -23,6 +23,7 @@ import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.studioviz.helper.GraphHelper;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 
 /**
@@ -37,9 +38,9 @@ public class GenerateGraph {
     @OperationMethod
     public Blob run() {
     	String studioJar = "";
-    	String mapModel = "";
-    	String mapView = "";
-    	String mapBusinessRules = "";
+    	JsonObject  mapModelJson = new JsonObject();
+    	JsonObject  mapViewJson = new JsonObject();
+    	JsonObject businessRulesJson = new JsonObject();
     	String url = "";
     	CommandLineExecutorComponent commandLineExecutorComponent = new CommandLineExecutorComponent();
     	String nuxeoHomePath = Environment.getDefault().getServerHome().getAbsolutePath();
@@ -62,25 +63,22 @@ public class GenerateGraph {
 		    String studiovizFolderPath = nuxeoHomePath+File.separator+"studioviz";
 		    gh.extractXMLFromStudioJar(studioJar, studiovizFolderPath);
 		    String studioProjectName = studioJar.replace(".jar", "");
-		    String destinationPath = nuxeoHomePath+File.separator+"nxserver"+File.separator+"nuxeo.war"+File.separator+"studioviz";
 
-		    mapModel = gh.generateModelGraphFromXML(studioProjectName, destinationPath, studiovizFolderPath, commandLineExecutorComponent, null);
+		    mapModelJson = gh.generateModelGraphFromXML(studioProjectName, studiovizFolderPath, commandLineExecutorComponent, null);
 
-		    mapView = gh.generateViewGraphFromXML(studioProjectName, destinationPath, studiovizFolderPath, commandLineExecutorComponent, null);
+		    mapViewJson = gh.generateViewGraphFromXML(studioProjectName, studiovizFolderPath, commandLineExecutorComponent, null);
 
-		    mapBusinessRules = gh.generateBusinessRulesGraphFromXML(studioProjectName, destinationPath, studiovizFolderPath, commandLineExecutorComponent, null);
+		    businessRulesJson = gh.generateBusinessRulesGraphFromXML(studioProjectName, studiovizFolderPath, commandLineExecutorComponent, null);
 
 	    } catch (Exception e) {
 	      logger.error("Exception while ",e);
 	    }
-    	try {
-    		ArrayList<String> automationList = gh.getAutomationList();
-    		String json = new Gson().toJson(automationList);
-			return new StringBlob("{\"model\":\""+URLEncoder.encode(mapModel,"UTF-8")+"\", \"view\": \""+URLEncoder.encode(mapView,"UTF-8")+"\", \"businessRules\": \""+URLEncoder.encode(mapBusinessRules,"UTF-8")+"\", \"automationList\": "+json+"}");
-		} catch (UnsupportedEncodingException e) {
-			logger.error("Error while encoding result", e);
-			return null;
-		}
+    	ArrayList<String> automationList = gh.getAutomationList();
+    	String json = new Gson().toJson(automationList);
+    	String businessRules = new Gson().toJson(businessRulesJson);
+    	String mapView = new Gson().toJson(mapViewJson);
+    	String mapModel = new Gson().toJson(mapModelJson);
+		return new StringBlob("{\"model\":"+mapModel+", \"view\": "+mapView+", \"businessRules\": "+businessRules+", \"automationList\": "+json+"}");		
     }
 
 }

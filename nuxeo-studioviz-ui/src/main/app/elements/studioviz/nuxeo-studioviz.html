@@ -170,12 +170,12 @@
           json = JSON.parse(response);
           this.automationList = json.automationList;
           this.selectedAutomationList = json.automationList;
-          this.cmapxView = decodeURIComponent(json.view).replace(new RegExp("\\+", 'g'), " ");
-          this.cmapxModel = decodeURIComponent(json.model).replace(new RegExp("\\+", 'g'), " ");
-          this.cmapxBusinessRules = decodeURIComponent(json.businessRules).replace(new RegExp("\\+", 'g'), " ");
-          this.imgModelUrl = "/nuxeo/studioviz/imgModel.png?random="+Math.random();
-          this.imgViewUrl = "/nuxeo/studioviz/imgView.png?random="+Math.random();
-          this.imgBusinessRulesUrl = "/nuxeo/studioviz/imgBusinessRules.png?random="+Math.random();
+          this.cmapxView = decodeURIComponent(json.view.map).replace(new RegExp("\\+", 'g'), " ");
+          this.cmapxModel = decodeURIComponent(json.model.map).replace(new RegExp("\\+", 'g'), " ");
+          this.cmapxBusinessRules = decodeURIComponent(json.businessRules.map).replace(new RegExp("\\+", 'g'), " ");
+          this.imgViewUrl = json.view.img;
+          this.imgModelUrl = json.model.img;
+          this.imgBusinessRulesUrl = json.businessRules.img;
           return true;
         } else {
           return false;
@@ -199,10 +199,9 @@
       },
       _ctxGraphGenerated: function(){
         if (this.ctxResponse) {
-          //console.log(this.ctxResponse);
           json = JSON.parse(this.ctxResponse);
-          this.cmapxBusinessRules = decodeURIComponent(json.businessRules).replace(new RegExp("\\+", 'g'), " ");
-          this.imgBusinessRulesUrl = "/nuxeo/studioviz/imgBusinessRules.png?random="+Math.random();
+          this.cmapxBusinessRules = decodeURIComponent(json.businessRules.map).replace(new RegExp("\\+", 'g'), " ");
+          this.imgBusinessRulesUrl = json.businessRules.img;
         }
       },
       _checkUncheckAll: function(e){

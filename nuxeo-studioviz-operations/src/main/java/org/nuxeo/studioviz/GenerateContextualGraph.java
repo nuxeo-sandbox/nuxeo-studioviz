@@ -8,7 +8,9 @@ import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.security.CodeSource;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -23,6 +25,9 @@ import org.nuxeo.ecm.core.api.impl.blob.StringBlob;
 import org.nuxeo.ecm.platform.commandline.executor.service.CommandLineExecutorComponent;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.studioviz.helper.GraphHelper;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 /**
  * @author mgena
@@ -42,9 +47,9 @@ public class GenerateContextualGraph {
     @OperationMethod
     public Blob run() {
        	String studioJar = "";
-    	String mapModel = "";
-    	String mapView = "";
-    	String mapBusinessRules = "";
+       	JsonObject mapModelJson = new JsonObject();
+    	JsonObject mapViewJson = new JsonObject();
+    	JsonObject businessRulesJson = new JsonObject();
     	String url = "";
     	CommandLineExecutorComponent commandLineExecutorComponent = new CommandLineExecutorComponent();
     	String nuxeoHomePath = Environment.getDefault().getServerHome().getAbsolutePath();
@@ -67,25 +72,26 @@ public class GenerateContextualGraph {
 		    String studiovizFolderPath = nuxeoHomePath+File.separator+"studioviz";
 		    gh.extractXMLFromStudioJar(studioJar, studiovizFolderPath);
 		    String studioProjectName = studioJar.replace(".jar", "");
-		    String destinationPath = nuxeoHomePath+File.separator+"nxserver"+File.separator+"nuxeo.war"+File.separator+"studioviz";
-		    String [] nodeArray = nodes.split(",");
-		    List<String> nodeList = Arrays.asList(nodeArray);
+		    
+		    List<String> nodeList = new ArrayList<String>();
+		    if(!("").equals(nodes)){
+		    	String [] nodeArray = nodes.split(",");		    
+		    	nodeList = Arrays.asList(nodeArray);
+		    }
 		    if(("model").equals(graphType)){
-		    	mapModel = gh.generateModelGraphFromXML(studioProjectName, destinationPath, studiovizFolderPath, commandLineExecutorComponent, nodeList);
+		    	mapModelJson = gh.generateModelGraphFromXML(studioProjectName, studiovizFolderPath, commandLineExecutorComponent, nodeList);
 		    }else if(("view").equals(graphType)){
-		    	mapView = gh.generateViewGraphFromXML(studioProjectName, destinationPath, studiovizFolderPath, commandLineExecutorComponent, nodeList);
+		    	mapViewJson = gh.generateViewGraphFromXML(studioProjectName, studiovizFolderPath, commandLineExecutorComponent, nodeList);
 		    }else if("businessRules".equals(graphType)){
-		    	mapBusinessRules = gh.generateBusinessRulesGraphFromXML(studioProjectName, destinationPath, studiovizFolderPath, commandLineExecutorComponent, nodeList);
+		    	businessRulesJson = gh.generateBusinessRulesGraphFromXML(studioProjectName, studiovizFolderPath, commandLineExecutorComponent, nodeList);
 		    }		    
 	    } catch (Exception e) {
 	      logger.error("Exception while ",e);
 	    }
-    	try {
-			return new StringBlob("{\"model\":\""+URLEncoder.encode(mapModel,"UTF-8")+"\", \"view\": \""+URLEncoder.encode(mapView,"UTF-8")+"\", \"businessRules\": \""+URLEncoder.encode(mapBusinessRules,"UTF-8")+"\"}");
-		} catch (UnsupportedEncodingException e) {
-			logger.error("Error while encoding result", e);
-			return null;
-		} 
+    	String businessRules = new Gson().toJson(businessRulesJson);
+        String mapView = new Gson().toJson(mapViewJson);
+        String mapModel = new Gson().toJson(mapModelJson);
+		return new StringBlob("{\"model\":"+mapModel+", \"view\": "+mapView+", \"businessRules\": "+businessRules+"}"); 
     }    
 
 }

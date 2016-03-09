@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -19,6 +20,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -46,6 +48,8 @@ import org.nuxeo.runtime.api.Framework;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
+
+import com.google.gson.JsonObject;
 
 public class GraphHelper {
 
@@ -164,7 +168,7 @@ public class GraphHelper {
 		}
 	}
 
-	public String generateModelGraphFromXML(String studioProjectName, String destinationPath, String studiovizFolderPath, CommandLineExecutorComponent commandLineExecutorComponent, List<String> nodeList) throws JAXBException, CommandNotAvailable, IOException{
+	public JsonObject generateModelGraphFromXML(String studioProjectName, String studiovizFolderPath, CommandLineExecutorComponent commandLineExecutorComponent, List<String> nodeList) throws JAXBException, CommandNotAvailable, IOException{
 		JAXBContext jc = JAXBContext.newInstance("org.nuxeo.jaxb");
 		Unmarshaller unmarshaller = jc.createUnmarshaller();
 		String result = "";
@@ -295,18 +299,28 @@ public class GraphHelper {
 	    //Generate png from dot
 	    parameters.addNamedParameter("inputFile", studiovizFolderPath+File.separator+"inputModel.dot");
 	    parameters.addNamedParameter("format", "png");
-	    parameters.addNamedParameter("outputFile", destinationPath+File.separator+"imgModel.png");
+	    parameters.addNamedParameter("outputFile", studiovizFolderPath+File.separator+"imgModel.png");
 	    commandLineExecutorComponent.execCommand("dot", parameters);
+	    
+	    JsonObject json = new JsonObject();
+	    byte[] bytesEncoded;
+		try {
+			bytesEncoded = Base64.encodeBase64(FileUtils.readFileToByteArray(new File(studiovizFolderPath+File.separator+"imgModel.png")));			
+			json.addProperty("img", "data:image/png;base64,"+new String(bytesEncoded));
+		} catch (IOException e) {
+			logger.error("Error while getting the generated image",e);
+		}
 
 	    //Generate map from dot
 	    parameters.addNamedParameter("format", "cmapx");
-	    parameters.addNamedParameter("outputFile", destinationPath+File.separator+"imgModel.cmapx");
+	    parameters.addNamedParameter("outputFile", studiovizFolderPath+File.separator+"imgModel.cmapx");
 	    commandLineExecutorComponent.execCommand("dot", parameters);
-	    map = FileUtils.readFileToString(new File(destinationPath+File.separator+"imgModel.cmapx"));
-	    return map;
+	    map = FileUtils.readFileToString(new File(studiovizFolderPath+File.separator+"imgModel.cmapx"));
+	    json.addProperty("map", URLEncoder.encode(map,"UTF-8"));
+	    return json;
 	}
 
-	public String generateViewGraphFromXML(String studioProjectName, String destinationPath, String studiovizFolderPath, CommandLineExecutorComponent commandLineExecutorComponent, List<String> nodeList) throws JAXBException, CommandNotAvailable, IOException{
+	public JsonObject generateViewGraphFromXML(String studioProjectName, String studiovizFolderPath, CommandLineExecutorComponent commandLineExecutorComponent, List<String> nodeList) throws JAXBException, CommandNotAvailable, IOException{
 		JAXBContext jc = JAXBContext.newInstance("org.nuxeo.jaxb");
 		Unmarshaller unmarshaller = jc.createUnmarshaller();
 		String result = "";
@@ -493,18 +507,28 @@ public class GraphHelper {
 	    //Generate png from dot
 	    parameters.addNamedParameter("inputFile", studiovizFolderPath+File.separator+"inputView.dot");
 	    parameters.addNamedParameter("format", "png");
-	    parameters.addNamedParameter("outputFile", destinationPath+File.separator+"imgView.png");
+	    parameters.addNamedParameter("outputFile", studiovizFolderPath+File.separator+"imgView.png");
 	    commandLineExecutorComponent.execCommand("dot", parameters);
+	    
+	    JsonObject json = new JsonObject();
+	    byte[] bytesEncoded;
+		try {
+			bytesEncoded = Base64.encodeBase64(FileUtils.readFileToByteArray(new File(studiovizFolderPath+File.separator+"imgView.png")));			
+			json.addProperty("img", "data:image/png;base64,"+new String(bytesEncoded));
+		} catch (IOException e) {
+			logger.error("Error while getting the generated image",e);
+		}
 
 	    //Generate map from dot
 	    parameters.addNamedParameter("format", "cmapx");
-	    parameters.addNamedParameter("outputFile", destinationPath+File.separator+"imgView.cmapx");
+	    parameters.addNamedParameter("outputFile", studiovizFolderPath+File.separator+"imgView.cmapx");
 	    commandLineExecutorComponent.execCommand("dot", parameters);
-	    map = FileUtils.readFileToString(new File(destinationPath+File.separator+"imgView.cmapx"));
-	    return map;
+	    map = FileUtils.readFileToString(new File(studiovizFolderPath+File.separator+"imgView.cmapx"));
+	    json.addProperty("map", URLEncoder.encode(map,"UTF-8"));
+	    return json;
 	}
 
-	public String generateBusinessRulesGraphFromXML(String studioProjectName, String destinationPath, String studiovizFolderPath, CommandLineExecutorComponent commandLineExecutorComponent, List<String> nodeList) throws JAXBException, CommandNotAvailable, IOException{
+	public JsonObject generateBusinessRulesGraphFromXML(String studioProjectName, String studiovizFolderPath, CommandLineExecutorComponent commandLineExecutorComponent, List<String> nodeList) throws JAXBException, CommandNotAvailable, IOException{
 		JAXBContext jc = JAXBContext.newInstance("org.nuxeo.jaxb");
 		Unmarshaller unmarshaller = jc.createUnmarshaller();
 		String result = "";
@@ -946,15 +970,27 @@ public class GraphHelper {
 	    //Generate png from dot
 	    parameters.addNamedParameter("inputFile", studiovizFolderPath+File.separator+"inputBusinessRules.dot");
 	    parameters.addNamedParameter("format", "png");
-	    parameters.addNamedParameter("outputFile", destinationPath+File.separator+"imgBusinessRules.png");
+	    parameters.addNamedParameter("outputFile", studiovizFolderPath+File.separator+"imgBusinessRules.png");
 	    commandLineExecutorComponent.execCommand("dot", parameters);
 
+	    JsonObject json = new JsonObject();
+	    byte[] bytesEncoded;
+		try {
+			bytesEncoded = Base64.encodeBase64(FileUtils.readFileToByteArray(new File(studiovizFolderPath+File.separator+"imgBusinessRules.png")));			
+			json.addProperty("img", "data:image/png;base64,"+new String(bytesEncoded));
+		} catch (IOException e) {
+			logger.error("Error while getting the generated image",e);
+		}
+	    
 	    //Generate map from dot
 	    parameters.addNamedParameter("format", "cmapx");
-	    parameters.addNamedParameter("outputFile", destinationPath+File.separator+"imgBusinessRules.cmapx");
+	    parameters.addNamedParameter("outputFile", studiovizFolderPath+File.separator+"imgBusinessRules.cmapx");
 	    commandLineExecutorComponent.execCommand("dot", parameters);
-	    map = FileUtils.readFileToString(new File(destinationPath+File.separator+"imgBusinessRules.cmapx"));
-	    return map;
+	    map = FileUtils.readFileToString(new File(studiovizFolderPath+File.separator+"imgBusinessRules.cmapx"));
+	    json.addProperty("map", URLEncoder.encode(map,"UTF-8"));
+	    return json;
 	}
+	
+
 
 }
