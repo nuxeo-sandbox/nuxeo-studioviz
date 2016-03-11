@@ -3,13 +3,17 @@ package org.nuxeo.studioviz.helper;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Writer;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -49,29 +53,36 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
+import freemarker.template.Version;
 
 public class GraphHelper {
 
     private Log logger = LogFactory.getLog(GraphHelper.class);
-    public static final String SNAPSHOT_SUFFIX = "0.0.0-SNAPSHOT";
-    public static final String EXTENSIONPOINT_CHAIN = "chains";
-    public static final String EXTENSIONPOINT_EVENT_HANDLERS = "event-handlers";
-    public static final String EXTENSIONPOINT_ACTIONS = "actions";
-    public static final String EXTENSIONPOINT_SCHEMAS = "schema";
-    public static final String EXTENSIONPOINT_DOCTYPE = "doctype";
-    public static final String EXTENSIONPOINT_TYPES = "types";
-    public static final String EXTENSIONPOINT_ROUTE_MODEL_IMPORTER = "routeModelImporter";
-    public static final String COMMON_SCHEMAS = "common,dublincore,uid,task,file,picture,image_metadata,iptc,publishing,webcontainer,files";
-    public static final String CONNECT_URL = "https://connect.nuxeo.com/nuxeo/site/studio/ide?project=";
+    private static final String SNAPSHOT_SUFFIX = "0.0.0-SNAPSHOT";
+    private static final String EXTENSIONPOINT_CHAIN = "chains";
+    private static final String EXTENSIONPOINT_EVENT_HANDLERS = "event-handlers";
+    private static final String EXTENSIONPOINT_ACTIONS = "actions";
+    private static final String EXTENSIONPOINT_SCHEMAS = "schema";
+    private static final String EXTENSIONPOINT_DOCTYPE = "doctype";
+    private static final String EXTENSIONPOINT_TYPES = "types";
+    private static final String EXTENSIONPOINT_ROUTE_MODEL_IMPORTER = "routeModelImporter";
+    private static final String COMMON_SCHEMAS = "common,dublincore,uid,task,file,picture,image_metadata,iptc,publishing,webcontainer,files";
+    private static final String CONNECT_URL = "https://connect.nuxeo.com/nuxeo/site/studio/ide?project=";
     
     private ArrayList<String> automationList = new ArrayList<String>();
 	
-    public static boolean isSnapshot(DownloadablePackage pkg) {
-		return ((pkg.getVersion() != null) && (pkg.getVersion().toString().endsWith("0.0.0-SNAPSHOT")));
+    private boolean isSnapshot(DownloadablePackage pkg) {
+		return ((pkg.getVersion() != null) && (pkg.getVersion().toString().endsWith(SNAPSHOT_SUFFIX)));
 	}
 
-	public static DownloadablePackage getSnapshot(List<DownloadablePackage> pkgs) {
+    private DownloadablePackage getSnapshot(List<DownloadablePackage> pkgs) {
 		for (DownloadablePackage pkg : pkgs) {
 			if (isSnapshot(pkg)) {
 				return pkg;
@@ -116,7 +127,7 @@ public class GraphHelper {
 		}
 	}
 
-	public static String cleanUpForDot(String content){
+	private String cleanUpForDot(String content){
 		 content = content.replaceAll("\\.", "");
 		 content = content.replaceAll("\\/", "");
 		 content = content.replaceAll("\\-", "_");
@@ -132,7 +143,7 @@ public class GraphHelper {
 	    String studioPackage = "";
 	    if (snapshotPkg != null) {
 	    	studioPackage = snapshotPkg.getId();
-	    	studioJar = studioPackage.replace("-0.0.0-SNAPSHOT", "")+".jar";
+	    	studioJar = studioPackage.replace("-"+SNAPSHOT_SUFFIX, "")+".jar";
 	    } else {
 	    	logger.info("No Studio Package found.");
 	    }
@@ -168,29 +179,33 @@ public class GraphHelper {
 		}
 	}
 
-	public JsonObject generateModelGraphFromXML(String studioProjectName, String studiovizFolderPath, CommandLineExecutorComponent commandLineExecutorComponent, List<String> nodeList) throws JAXBException, CommandNotAvailable, IOException{
+	public JsonObject generateModelGraphFromXML(String studioProjectName, String studiovizFolderPath, CommandLineExecutorComponent commandLineExecutorComponent, List<String> nodeList) throws JAXBException, CommandNotAvailable, IOException, TemplateException{
 		JAXBContext jc = JAXBContext.newInstance("org.nuxeo.jaxb");
 		Unmarshaller unmarshaller = jc.createUnmarshaller();
-		String result = "";
+
 		String map = "";
 		Component component = (Component) unmarshaller.unmarshal(new File(studiovizFolderPath+File.separator+"OSGI-INF"+File.separator+"extensions.xml"));
 
-		String schemas = "subgraph cluster_0 {\n"+
-	 		 	   "	style=\"dashed\";\n"+
-	 		 	   " 	label = \"Schemas\";\n";
+		//Freemarker configuration object
+        Configuration cfg = new Configuration(new Version(2,3,0));
+        
+        //Load template
+        cfg.setClassForTemplateLoading(this.getClass(), "/templates");
+        Template template = cfg.getTemplate("inputModel.ftl");       
+        
+        // Build the data-model
+        Map<String, Object> data = new HashMap<String, Object>();
+        data.put("studioProjectName", studioProjectName);
+		
+        ArrayList<String> nodes = new ArrayList<String>();
+        ArrayList<String> transitions = new ArrayList<String>();
+        
+        Gson gson = new GsonBuilder().disableHtmlEscaping().create();
+        
+        String schemas = "";
+        String docTypes = "";
+        String facets = "";
 
-		String docTypes = "subgraph cluster_1 {\n"+
-	 		 	   "	style=\"dashed\";\n"+
-	 		 	   " 	label = \"Document Types\";\n";
-
-		String facets = "subgraph cluster_2 {\n"+
-	 		 	   "	style=\"dashed\";\n"+
-	 		 	   " 	label = \"Facets\";\n";
-
-		result = "digraph M {\n"+
-		    "graph [fontname = \"helvetica\", fontsize=11];\n"+
-		    "node [fontname = \"helvetica\", fontsize=11];\n"+
-		    "edge [fontname = \"helvetica\", fontsize=11];\n";
 		List<Extension> extensions = component.getExtension();
 
 		int nbSchemas = 0;
@@ -209,7 +224,12 @@ public class GraphHelper {
 	    					//Schemas starting with var_ are reserved for worfklow tasks
 	    					//Schemas ending with _cv are reserved for content views
 	    					if(schemaName != null && !schemaName.startsWith("var_") && !schemaName.endsWith("_cv") && !schemasList.contains(schemaName)){
-	    						result += schemaName+"_sh [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+schemaName+".ds\", label=\""+schemaName+"\",shape=box,fontcolor=white,color=\"#24A4CC\",fillcolor=\"#24A4CC\",style=\"filled\"];\n";
+	    						JsonObject schemaJson = new JsonObject();
+	    						schemaJson.addProperty("name", schemaName+"_sh");
+	    						schemaJson.addProperty("featureName", schemaName+".ds");
+	    						schemaJson.addProperty("labelName", schemaName);
+	    						schemaJson.addProperty("color", "#24A4CC");
+	    						nodes.add(gson.toJson(schemaJson));
 	    						if(nbSchemas > 0){
 		    						schemas += "->";
 		    					}
@@ -230,17 +250,28 @@ public class GraphHelper {
 	    					String docTypeName = docType.getName();
 	    					//DocType ending with _cv are created for content views
 	    					if(docTypeName != null && !docTypeName.endsWith("_cv")){
-	    						result += docTypeName+ " [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+docTypeName+".doc\", label=\""+docTypeName+"\",shape=box,fontcolor=white,color=\"#1CA5FC\",fillcolor=\"#1CA5FC\",style=\"filled\"];\n";
-	    						result += docTypeName+"->"+docType.getExtends()+"[label=\"inherits\"];\n";
-
+	    						JsonObject docTypeJson = new JsonObject();
+	    						docTypeJson.addProperty("name", docTypeName);
+	    						docTypeJson.addProperty("featureName", docTypeName+".doc");
+	    						docTypeJson.addProperty("labelName", docTypeName);
+	    						docTypeJson.addProperty("color", "#1CA5FC");
+	    						nodes.add(gson.toJson(docTypeJson));
+	    						transitions.add(docTypeName+"->"+docType.getExtends()+"[label=\"inherits\"]");
+	    						
 	    						List<Doctype.Schema> extraSchemas = docType.getSchema();
 	    						for(Doctype.Schema extraSchema: extraSchemas){
 	    							//Don't include common schemas for the sake of visibility
 	    							if(!COMMON_SCHEMAS.contains(extraSchema.getName())){
-	    								result += docTypeName+"->"+extraSchema.getName()+"_sh;\n";
+	    								transitions.add(docTypeName+"->"+extraSchema.getName()+"_sh");
+	    								
 	    								if(!schemasList.contains(extraSchema.getName()+"_sh")){
-		    								result += extraSchema.getName()+"_sh [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+extraSchema.getName()+".ds\", label=\""+extraSchema.getName()+"\",shape=box,fontcolor=white,color=\"#24A4CC\",fillcolor=\"#24A4CC\",style=\"filled\"];\n";
-		    	    						if(nbSchemas > 0){
+		    								JsonObject schemaJson = new JsonObject();
+		    								schemaJson.addProperty("name", extraSchema.getName()+"_sh");
+		    								schemaJson.addProperty("featureName", extraSchema.getName()+".ds");
+		    								schemaJson.addProperty("labelName", extraSchema.getName());
+		    								schemaJson.addProperty("color", "#24A4CC");
+		    	    						nodes.add(gson.toJson(schemaJson));
+		    								if(nbSchemas > 0){
 		    		    						schemas += "->";
 		    		    					}
 		    	    						schemas += extraSchema.getName()+"_sh";
@@ -252,9 +283,14 @@ public class GraphHelper {
 
 	    						List<Doctype.Facet> extraFacets = docType.getFacet();
 	    						for(Doctype.Facet extraFacet : extraFacets){
-	    							result += docTypeName+"->"+extraFacet.getName()+"_facet;\n";
+	    							transitions.add(docTypeName+"->"+extraFacet.getName()+"_facet");
+	    							
 	    							if(!facets.contains(extraFacet.getName()+"_facet")){
-		    							result += extraFacet.getName()+ "_facet [label=\""+extraFacet.getName()+"\",shape=box,fontcolor=white,color=\"#17384E\",fillcolor=\"#17384E\",style=\"filled\"];\n";
+		    							JsonObject facetJson = new JsonObject();
+		    							facetJson.addProperty("name", extraFacet.getName()+ "_facet");
+		    							facetJson.addProperty("labelName", extraFacet.getName());
+		    							facetJson.addProperty("color", "#17384E");
+	    	    						nodes.add(gson.toJson(facetJson));
 		    							if(nbFacets >0){
 		    								facets += "->";
 		    							}
@@ -270,7 +306,12 @@ public class GraphHelper {
 	    						nbDocTypes ++;
 
 	    						if(!docTypesList.contains(docType.getExtends())){
-	    							result += docType.getExtends()+ " [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+docType.getExtends()+".doc\", label=\""+docType.getExtends()+"\",shape=box,fontcolor=white,color=\"#1CA5FC\",fillcolor=\"#1CA5FC\",style=\"filled\"];\n";
+	    							JsonObject extraDocTypeJson = new JsonObject();
+	    							extraDocTypeJson.addProperty("name", docType.getExtends());
+	    							extraDocTypeJson.addProperty("featureName", docType.getExtends()+".doc");
+	    							extraDocTypeJson.addProperty("labelName", docType.getExtends());
+	    							extraDocTypeJson.addProperty("color", "#1CA5FC");
+    	    						nodes.add(gson.toJson(extraDocTypeJson));
 	    							docTypes += "->";
 	    							docTypes += docType.getExtends();
 	    							docTypesList.add(docType.getExtends());
@@ -285,14 +326,21 @@ public class GraphHelper {
 	    	}
 	    }
 
-		schemas += (nbSchemas>1?" [style=invis]":"")+";\n}";
-		docTypes += (nbDocTypes>1?" [style=invis]":"")+";\n}";
-		facets += (nbFacets>1?" [style=invis]":"")+";\n}";
+		schemas += (nbSchemas>1?" [style=invis]":"");
+		docTypes += (nbDocTypes>1?" [style=invis]":"");
+		facets += (nbFacets>1?" [style=invis]":"");
+    	
+    	data.put("nodes", nodes);
+    	data.put("transitions", transitions);
+    	if(nbSchemas>0) data.put("schemas", schemas);
+    	if(nbDocTypes>0) data.put("docTypes", docTypes);
+    	if(nbFacets>0) data.put("facets", facets);
 
-	    result += (nbSchemas>0?schemas:"")+"\n"+(nbDocTypes>0?docTypes:"")+"\n"+(nbFacets>0?facets:"")+"\n";
-    	result += "}";
-
-	    writeToFile(studiovizFolderPath+File.separator+File.separator+"inputModel.dot", result);
+        // File output
+        Writer file = new FileWriter (new File(studiovizFolderPath+File.separator+File.separator+"inputModel.dot"));
+        template.process(data, file);
+        file.flush();
+        file.close();
 
 	    CmdParameters parameters = new CmdParameters();
 
@@ -303,14 +351,10 @@ public class GraphHelper {
 	    commandLineExecutorComponent.execCommand("dot", parameters);
 	    
 	    JsonObject json = new JsonObject();
-	    byte[] bytesEncoded;
-		try {
-			bytesEncoded = Base64.encodeBase64(FileUtils.readFileToByteArray(new File(studiovizFolderPath+File.separator+"imgModel.png")));			
-			json.addProperty("img", "data:image/png;base64,"+new String(bytesEncoded));
-		} catch (IOException e) {
-			logger.error("Error while getting the generated image",e);
-		}
-
+	    byte[] bytesEncoded;		
+		bytesEncoded = Base64.encodeBase64(FileUtils.readFileToByteArray(new File(studiovizFolderPath+File.separator+"imgModel.png")));			
+		json.addProperty("img", "data:image/png;base64,"+new String(bytesEncoded));
+		
 	    //Generate map from dot
 	    parameters.addNamedParameter("format", "cmapx");
 	    parameters.addNamedParameter("outputFile", studiovizFolderPath+File.separator+"imgModel.cmapx");
@@ -320,33 +364,34 @@ public class GraphHelper {
 	    return json;
 	}
 
-	public JsonObject generateViewGraphFromXML(String studioProjectName, String studiovizFolderPath, CommandLineExecutorComponent commandLineExecutorComponent, List<String> nodeList) throws JAXBException, CommandNotAvailable, IOException{
+	public JsonObject generateViewGraphFromXML(String studioProjectName, String studiovizFolderPath, CommandLineExecutorComponent commandLineExecutorComponent, List<String> nodeList) throws JAXBException, CommandNotAvailable, IOException, TemplateException{
 		JAXBContext jc = JAXBContext.newInstance("org.nuxeo.jaxb");
 		Unmarshaller unmarshaller = jc.createUnmarshaller();
-		String result = "";
+		
 		String map = "";
 		Component component = (Component) unmarshaller.unmarshal(new File(studiovizFolderPath+File.separator+"OSGI-INF"+File.separator+"extensions.xml"));
 
-		String tabs = "subgraph cluster_0 {\n"+
-		 		 	   "	style=\"dashed\";\n"+
-		 		 	   " 	label = \"Tabs\";\n";
-
-		String docTypes = "subgraph cluster_1 {\n"+
-	 		 	   "	style=\"dashed\";\n"+
-	 		 	   " 	label = \"Document Types\";\n";
-
-		String contentViews = "subgraph cluster_2 {\n"+
-	 		 	   "	style=\"dashed\";\n"+
-	 		 	   " 	label = \"Content Views\";\n";
+		//Freemarker configuration object
+        Configuration cfg = new Configuration(new Version(2,3,0));
+        
+        //Load template
+        cfg.setClassForTemplateLoading(this.getClass(), "/templates");
+        Template template = cfg.getTemplate("inputView.ftl");       
+        
+        // Build the data-model
+        Map<String, Object> data = new HashMap<String, Object>();
+        data.put("studioProjectName", studioProjectName);
 		
-		String formLayouts = "subgraph cluster_3 {\n"+
-	 		 	   "	style=\"dashed\";\n"+
-	 		 	   " 	label = \"Form Layouts\";\n";
-
-		result = "digraph V {\n"+
-		    "graph [fontname = \"helvetica\", fontsize=11];\n"+
-		    "node [fontname = \"helvetica\", fontsize=11];\n"+
-		    "edge [fontname = \"helvetica\", fontsize=11];\n";
+        ArrayList<String> nodes = new ArrayList<String>();
+        ArrayList<String> transitions = new ArrayList<String>();
+        
+        Gson gson = new GsonBuilder().disableHtmlEscaping().create();
+        
+		String tabs = "";
+		String docTypes = "";
+		String contentViews = "";
+		String formLayouts = "";
+		
 		List<Extension> extensions = component.getExtension();
 
 		int nbTabs = 0;
@@ -384,10 +429,14 @@ public class GraphHelper {
 		    								if(types !=null){
 		    									for(Type type:types){
 		    										String docTypeName = type.getValue();
-		    					    				result += cleanedActionId+"_tab -> "+docTypeName+";\n";
-
+		    					    				transitions.add(cleanedActionId+"_tab -> "+docTypeName);
 		    					    				if(!docTypesList.contains(docTypeName)){
-		    					    					result += docTypeName+ " [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+docTypeName+".doc\", label=\""+docTypeName+"\",shape=box,fontcolor=white,color=\"#1CA5FC\",fillcolor=\"#1CA5FC\",style=\"filled\"];\n";
+		    					    					JsonObject docTypeJson = new JsonObject();
+		    					    					docTypeJson.addProperty("name", docTypeName);
+		    					    					docTypeJson.addProperty("featureName", docTypeName+".doc");
+		    					    					docTypeJson.addProperty("labelName", docTypeName);
+		    					    					docTypeJson.addProperty("color", "#1CA5FC");
+		    				    						nodes.add(gson.toJson(docTypeJson));
 		    					    					if(nbDocTypes >0){
 		    					    						docTypes += "->";
 		    					    					}
@@ -405,7 +454,12 @@ public class GraphHelper {
 
 
 		    				if(!tabs.contains(cleanedActionId)){
-		    					result += cleanedActionId + "_tab [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+action.getId()+".tab\" label=\""+action.getId()+"\",shape=box,fontcolor=white,color=\"#2B333E\",fillcolor=\"#2B333E\",style=\"filled\"];\n";
+		    					JsonObject actionJson = new JsonObject();
+		    					actionJson.addProperty("name", cleanedActionId+"_tab");
+		    					actionJson.addProperty("featureName", action.getId()+".tab");
+		    					actionJson.addProperty("labelName", action.getId());
+		    					actionJson.addProperty("color", "#2B333E");
+	    						nodes.add(gson.toJson(actionJson));
 		    					if(nbTabs >0){
 			    					tabs += "->";
 		    					}
@@ -431,7 +485,12 @@ public class GraphHelper {
 	    							if("content".equals(cvs.getCategory())){
 
 	    								if(!docTypesList.contains(typeId)){
-	    			    					result += typeId+ " [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+typeId+".doc\", label=\""+typeId+"\",shape=box,fontcolor=white,color=\"#1CA5FC\",fillcolor=\"#1CA5FC\",style=\"filled\"];\n";
+	    			    					JsonObject typeJson = new JsonObject();
+	    			    					typeJson.addProperty("name", typeId);
+	    			    					typeJson.addProperty("featureName", typeId+".doc");
+	    			    					typeJson.addProperty("labelName", typeId);
+	    			    					typeJson.addProperty("color", "#1CA5FC");
+	    		    						nodes.add(gson.toJson(typeJson));
 	    			    					if(nbDocTypes >0){
 	    			    						docTypes += "->";
 	    			    					}
@@ -442,10 +501,16 @@ public class GraphHelper {
 
 	    								String contentViewName = contentView.getValue();
 	    								String cleanedContentViewName = cleanUpForDot(contentView.getValue());
-	    								result += typeId+"->"+cleanedContentViewName+";\n";
+	    								transitions.add(typeId+"->"+cleanedContentViewName);
+	    								
 	    								if(!contentViews.contains(cleanedContentViewName)){
-	    									result += cleanedContentViewName+ " [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+contentViewName+".contentView\", label=\""+contentViewName+"\",shape=box,fontcolor=white,color=\"#31A3C5\",fillcolor=\"#31A3C5\",style=\"filled\"];\n";
-		    		    					if(nbContentViews >0){
+	    									JsonObject contentViewJson = new JsonObject();
+	    									contentViewJson.addProperty("name", cleanedContentViewName);
+	    									contentViewJson.addProperty("featureName", contentViewName+".contentView");
+	    									contentViewJson.addProperty("labelName", contentViewName);
+	    									contentViewJson.addProperty("color", "#31A3C5");
+	    		    						nodes.add(gson.toJson(contentViewJson));
+	    									if(nbContentViews >0){
 		    		    						contentViews += "->";
 		    		    					}
 		    		    					contentViews += cleanedContentViewName;
@@ -462,10 +527,16 @@ public class GraphHelper {
 	    						if(!layout.getValue().startsWith("layout@") && !typeId.endsWith("_cv")){
 	    							String formLayoutName = layout.getValue().split("@")[0];
 	    							String cleanedFormLayoutName = cleanUpForDot(layout.getValue().split("@")[0]);
-	    							if(!formLayouts.contains(cleanedFormLayoutName+"_fl")){
+	    							cleanedFormLayoutName = cleanedFormLayoutName+"_fl";
+	    							if(!formLayouts.contains(cleanedFormLayoutName)){
 	    								
 	    								if(!docTypesList.contains(typeId)){
-	    			    					result += typeId+ " [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+typeId+".doc\", label=\""+typeId+"\",shape=box,fontcolor=white,color=\"#1CA5FC\",fillcolor=\"#1CA5FC\",style=\"filled\"];\n";
+	    			    					JsonObject contentViewJson = new JsonObject();
+	    									contentViewJson.addProperty("name", typeId);
+	    									contentViewJson.addProperty("featureName", typeId+".doc");
+	    									contentViewJson.addProperty("labelName", typeId);
+	    									contentViewJson.addProperty("color", "#1CA5FC");
+	    		    						nodes.add(gson.toJson(contentViewJson));
 	    			    					if(nbDocTypes >0){
 	    			    						docTypes += "->";
 	    			    					}
@@ -474,12 +545,17 @@ public class GraphHelper {
 	    									nbDocTypes ++;
 	    			    				}
 	    								
-	    								result += typeId+"->"+cleanedFormLayoutName+"_fl;\n";
-    									result += cleanedFormLayoutName+ "_fl [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+formLayoutName+".layout\", label=\""+formLayoutName+"\",shape=box,fontcolor=white,color=\"#FC4835\",fillcolor=\"#FC4835\",style=\"filled\"];\n";
-	    		    					if(nbFormLayouts >0){
+	    								transitions.add(typeId+"->"+cleanedFormLayoutName);
+    									JsonObject formLayoutJson = new JsonObject();
+    									formLayoutJson.addProperty("name", cleanedFormLayoutName);
+    									formLayoutJson.addProperty("featureName", formLayoutName+".layout");
+    									formLayoutJson.addProperty("labelName", formLayoutName);
+    									formLayoutJson.addProperty("color", "#FC4835");
+    		    						nodes.add(gson.toJson(formLayoutJson));
+    									if(nbFormLayouts >0){
 	    		    						formLayouts += "->";
 	    		    					}
-	    		    					formLayouts += cleanedFormLayoutName+"_fl";
+	    		    					formLayouts += cleanedFormLayoutName;
 	    		    					nbFormLayouts ++;
     								}
 	    						}
@@ -493,15 +569,24 @@ public class GraphHelper {
 	    	}
 	    }
 
-		tabs += (nbTabs>1?" [style=invis]":"")+";\n}";
-		docTypes += (nbDocTypes>1?" [style=invis]":"")+";\n}";
-		contentViews +=  (nbContentViews>1?" [style=invis]":"")+";\n}";
-		formLayouts +=  (nbFormLayouts>1?" [style=invis]":"")+";\n}";
-	    result += (nbTabs>0?tabs:"")+"\n"+(nbDocTypes>0?docTypes:"")+"\n"+(nbContentViews>0?contentViews:"")+"\n"+(nbFormLayouts>0?formLayouts:"")+"\n";
-    	result += "}";
+		tabs += (nbTabs>1?" [style=invis]":"");
+		docTypes += (nbDocTypes>1?" [style=invis]":"");
+		contentViews +=  (nbContentViews>1?" [style=invis]":"");
+		formLayouts +=  (nbFormLayouts>1?" [style=invis]":"");
 
-	    writeToFile(studiovizFolderPath+File.separator+File.separator+"inputView.dot", result);
+		data.put("nodes", nodes);
+    	data.put("transitions", transitions);
+    	if(nbTabs>0) data.put("tabs", tabs);
+    	if(nbDocTypes>0) data.put("docTypes", docTypes);
+    	if(nbContentViews>0) data.put("contentViews", contentViews);
+    	if(nbFormLayouts>0) data.put("formLayouts", formLayouts);
 
+        // File output
+        Writer file = new FileWriter (new File(studiovizFolderPath+File.separator+File.separator+"inputView.dot"));
+        template.process(data, file);
+        file.flush();
+        file.close();
+		
 	    CmdParameters parameters = new CmdParameters();
 
 	    //Generate png from dot
@@ -512,12 +597,8 @@ public class GraphHelper {
 	    
 	    JsonObject json = new JsonObject();
 	    byte[] bytesEncoded;
-		try {
-			bytesEncoded = Base64.encodeBase64(FileUtils.readFileToByteArray(new File(studiovizFolderPath+File.separator+"imgView.png")));			
-			json.addProperty("img", "data:image/png;base64,"+new String(bytesEncoded));
-		} catch (IOException e) {
-			logger.error("Error while getting the generated image",e);
-		}
+	    bytesEncoded = Base64.encodeBase64(FileUtils.readFileToByteArray(new File(studiovizFolderPath+File.separator+"imgView.png")));			
+		json.addProperty("img", "data:image/png;base64,"+new String(bytesEncoded));
 
 	    //Generate map from dot
 	    parameters.addNamedParameter("format", "cmapx");
@@ -528,33 +609,33 @@ public class GraphHelper {
 	    return json;
 	}
 
-	public JsonObject generateBusinessRulesGraphFromXML(String studioProjectName, String studiovizFolderPath, CommandLineExecutorComponent commandLineExecutorComponent, List<String> nodeList) throws JAXBException, CommandNotAvailable, IOException{
+	public JsonObject generateBusinessRulesGraphFromXML(String studioProjectName, String studiovizFolderPath, CommandLineExecutorComponent commandLineExecutorComponent, List<String> nodeList) throws JAXBException, CommandNotAvailable, IOException, TemplateException{
 		JAXBContext jc = JAXBContext.newInstance("org.nuxeo.jaxb");
 		Unmarshaller unmarshaller = jc.createUnmarshaller();
-		String result = "";
 		String map = "";
 		Component component = (Component) unmarshaller.unmarshal(new File(studiovizFolderPath+File.separator+"OSGI-INF"+File.separator+"extensions.xml"));
 
-		String userActions = "subgraph cluster_0 {\n"+
-						 	 "	style=\"dashed\";\n"+
-						     "	label = \"User Actions\";\n";
-
-		String automationChainsAndScripting = "subgraph cluster_1 {\n"+
-				 							  "	style=\"dashed\";\n"+
-				 							  " label = \"Automation Chains & Scriptings\";\n";
-
-		String events =  "subgraph cluster_2 {\n"+
-				 		 "	style=\"dashed\";\n"+
-				 		 "  label = \"Events\";\n";
+		//Freemarker configuration object
+        Configuration cfg = new Configuration(new Version(2,3,0));
+        
+        //Load template
+        cfg.setClassForTemplateLoading(this.getClass(), "/templates");
+        Template template = cfg.getTemplate("inputBusinessRules.ftl");
+        
+        // Build the data-model
+        Map<String, Object> data = new HashMap<String, Object>();
+        data.put("studioProjectName", studioProjectName);
+        
+        ArrayList<String> nodes = new ArrayList<String>();
+        ArrayList<String> transitions = new ArrayList<String>();
+        
+        Gson gson = new GsonBuilder().disableHtmlEscaping().create();
+        
+		String userActions = "";
+		String automationChainsAndScripting = "";
+		String events =  "";	
+		String wfTasks =  "";
 		
-		String wfTasks =  "subgraph cluster_3 {\n"+
-		 		 "	style=\"dashed\";\n"+
-		 		 "  label = \"Workflow Tasks\";\n";
-
-		result = "digraph BL {\n"+
-		    "graph [fontname = \"helvetica\", fontsize=11];\n"+
-		    "node [fontname = \"helvetica\", fontsize=11];\n"+
-		    "edge [fontname = \"helvetica\", fontsize=11];\n";
 		List<Extension> extensions = component.getExtension();
 		String pattern = "\\#\\{operationActionBean.doOperation\\('(.*)'\\)\\}";
 		// Create a Pattern object
@@ -598,10 +679,16 @@ public class GraphHelper {
 		    					}
 		    								    					
 		    					String refChainId = chainId.startsWith("javascript.")? chainId.replace("javascript.", "")+".scriptedOperation" : chainId+".ops";
-		    					result += cleanedActionId+"_action -> "+cleanedChainId+";\n";
-
-			    				if(!automationList.contains(cleanedChainId)){
-			    					result += cleanedChainId + " [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+refChainId+"\", label=\""+chainId+"\",shape=box,fontcolor=white,color=\"#28A3C7\",fillcolor=\"#28A3C7\",style=\"filled\"];\n";
+		    					transitions.add(cleanedActionId+"_action -> "+cleanedChainId);
+			    				
+		    					if(!automationList.contains(cleanedChainId)){
+			    					JsonObject chainJson = new JsonObject();
+			    					chainJson.addProperty("name", cleanedChainId);
+			    					chainJson.addProperty("featureName", refChainId);
+			    					chainJson.addProperty("labelName", chainId);
+			    					chainJson.addProperty("color", "#28A3C7");
+		    						nodes.add(gson.toJson(chainJson));
+			    					
 			    					if(nbAutomationChains >0 || nbAutomationScripting >0){
 			    						automationChainsAndScripting += "->";
 				    				}
@@ -614,8 +701,13 @@ public class GraphHelper {
 				    					nbAutomationChains ++;
 				    				}			    					
 			    				}
-			    				result += cleanedActionId+"_action [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+action.getId()+".action\", label=\""+action.getId()+"\n"+(action.getLabel()!= null ? action.getLabel().replace("\"", "\\\""):"")+"\",shape=box,fontcolor=white,color=\"#00ADFF\",fillcolor=\"#00ADFF\",style=\"filled\"];\n";
-				    			if(nbUserActions >0){
+			    				JsonObject actionJson = new JsonObject();
+			    				actionJson.addProperty("name", cleanedActionId+"_action");
+			    				actionJson.addProperty("featureName", action.getId()+".action");
+			    				actionJson.addProperty("labelName", action.getId()+"\n"+(action.getLabel()!= null ? action.getLabel():""));
+			    				actionJson.addProperty("color", "#00ADFF");
+	    						nodes.add(gson.toJson(actionJson));
+			    				if(nbUserActions >0){
 				    				userActions += "->";
 				    			}
 				    			userActions += cleanedActionId+"_action";
@@ -658,7 +750,7 @@ public class GraphHelper {
 	    						    						    						    					
 	    						    					if(nodeList == null || (nodeList != null && nodeList.contains(m.group(1))) || mainChainIsPartOfTheNodeList){
 	    						    						String cleanedSecondChain = cleanUpForDot(m.group(1));
-	    						    						result += chainIdForDot+" -> "+cleanedSecondChain+";\n";
+	    						    						transitions.add(chainIdForDot+" -> "+cleanedSecondChain);
 	    						    						secondChainIsPartOfTheNodeList = true;
 	    						    						if(!automationList.contains(cleanedSecondChain)){
 				    											if(nbAutomationChains >0 || nbAutomationScripting >0){
@@ -672,15 +764,20 @@ public class GraphHelper {
 				    						    					nbAutomationChains ++;
 				    						    				}	
 				    					    					String refSecondChainId = m.group(1).startsWith("javascript.")? m.group(1).replace("javascript.", "")+".scriptedOperation" : m.group(1)+".ops";
-										    					result += cleanedSecondChain + " [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+refSecondChainId+"\", label=\""+m.group(1)+"\",shape=box,fontcolor=white,color=\"#28A3C7\",fillcolor=\"#28A3C7\",style=\"filled\"];\n";
-
+										    					JsonObject secondChainJson = new JsonObject();
+										    					secondChainJson.addProperty("name", cleanedSecondChain);
+										    					secondChainJson.addProperty("featureName", refSecondChainId);
+										    					secondChainJson.addProperty("labelName", m.group(1));
+										    					secondChainJson.addProperty("color", "#28A3C7");
+									    						nodes.add(gson.toJson(secondChainJson));
 			    											}	    
 	    						    						
 	    						    					}
 	    						    					
 	    						    					if(nodeList == null || (nodeList != null && nodeList.contains(m.group(2))) || mainChainIsPartOfTheNodeList){	    						    			
 	    						    						String cleanedSecondChain = cleanUpForDot(m.group(2));
-	    						    						result += chainIdForDot+" -> "+cleanedSecondChain+";\n";
+	    						    						transitions.add(chainIdForDot+" -> "+cleanedSecondChain);
+	    						    						
 	    						    						secondChainIsPartOfTheNodeList = true;
 	    						    						if(!automationList.contains(cleanedSecondChain)){
 				    											if(nbAutomationChains >0 || nbAutomationScripting >0){
@@ -694,8 +791,12 @@ public class GraphHelper {
 				    						    					nbAutomationChains ++;
 				    						    				}
 				    					    					String refSecondChainId = m.group(2).startsWith("javascript.")? m.group(2).replace("javascript.", "")+".scriptedOperation" : m.group(2)+".ops";
-										    					result += cleanedSecondChain + " [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+refSecondChainId+"\", label=\""+m.group(2)+"\",shape=box,fontcolor=white,color=\"#28A3C7\",fillcolor=\"#28A3C7\",style=\"filled\"];\n";
-
+										    					JsonObject secondChainJson = new JsonObject();
+										    					secondChainJson.addProperty("name", cleanedSecondChain);
+										    					secondChainJson.addProperty("featureName", refSecondChainId);
+										    					secondChainJson.addProperty("labelName", m.group(2));
+										    					secondChainJson.addProperty("color", "#28A3C7");
+									    						nodes.add(gson.toJson(secondChainJson));
 			    											}	
 	    						    					}
 	    						    					
@@ -704,7 +805,7 @@ public class GraphHelper {
 	    											if(nodeList == null || (nodeList != null && nodeList.contains(cleanUpForDot(param.getValue()))) || mainChainIsPartOfTheNodeList){
 	    												String cleanedSecondChain = cleanUpForDot(param.getValue());
 	    												secondChainIsPartOfTheNodeList = true;
-	    												result += chainIdForDot+" -> "+cleanedSecondChain+";\n";
+	    												transitions.add(chainIdForDot+" -> "+cleanedSecondChain);
 		    											if(!automationList.contains(cleanedSecondChain)){
 			    											if(nbAutomationChains >0 || nbAutomationScripting >0){
 			    					    						automationChainsAndScripting += "->";
@@ -718,8 +819,12 @@ public class GraphHelper {
 			    						    					nbAutomationChains ++;
 			    						    				}
 			    					    					String refSecondChainId = param.getValue().startsWith("javascript.")? param.getValue().replace("javascript.", "")+".scriptedOperation" : param.getValue()+".ops";
-									    					result += cleanedSecondChain + " [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+refSecondChainId+"\", label=\""+param.getValue()+"\",shape=box,fontcolor=white,color=\"#28A3C7\",fillcolor=\"#28A3C7\",style=\"filled\"];\n";
-
+									    					JsonObject secondChainJson = new JsonObject();
+									    					secondChainJson.addProperty("name", cleanedSecondChain);
+									    					secondChainJson.addProperty("featureName", refSecondChainId);
+									    					secondChainJson.addProperty("labelName", param.getValue());
+									    					secondChainJson.addProperty("color", "#28A3C7");
+								    						nodes.add(gson.toJson(secondChainJson));
 		    											}	    												
 	    											}
 	    										}
@@ -730,7 +835,7 @@ public class GraphHelper {
 	    								if(nodeList == null || (nodeList != null && nodeList.contains(cleanUpForDot(operation.getId()))) || mainChainIsPartOfTheNodeList){
 	    									String cleanedSecondChain = cleanUpForDot(operation.getId());
 	    									secondChainIsPartOfTheNodeList = true;
-		    								result += chainIdForDot+" -> "+cleanedSecondChain+";\n";
+	    									transitions.add(chainIdForDot+" -> "+cleanedSecondChain);
 											if(!automationList.contains(cleanedSecondChain)){
 												if(nbAutomationChains >0 || nbAutomationScripting >0){
 						    						automationChainsAndScripting += "->";
@@ -740,8 +845,12 @@ public class GraphHelper {
 							    				nbAutomationScripting ++;	
 							    				
 							    				String refSecondChainId = operation.getId().startsWith("javascript.")? operation.getId().replace("javascript.", "")+".scriptedOperation" : operation.getId()+".ops";
-						    					result += cleanedSecondChain + " [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+refSecondChainId+"\", label=\""+operation.getId()+"\",shape=box,fontcolor=white,color=\"#28A3C7\",fillcolor=\"#28A3C7\",style=\"filled\"];\n";
-
+						    					JsonObject secondChainJson = new JsonObject();
+						    					secondChainJson.addProperty("name", cleanedSecondChain);
+						    					secondChainJson.addProperty("featureName", refSecondChainId);
+						    					secondChainJson.addProperty("labelName", operation.getId());
+						    					secondChainJson.addProperty("color", "#28A3C7");
+					    						nodes.add(gson.toJson(secondChainJson));
 											}
 	    								}
 	    							}
@@ -766,8 +875,13 @@ public class GraphHelper {
 			    				}
 		    					
 		    					String description = (chain.getDescription() != null ? "\n"+chain.getDescription():"");
-			    				description = description.replace("\"", "\\\"");
-		    					result += chainIdForDot + " [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+refChainId+"\", label=\""+chainId+description+"\",shape=box,fontcolor=white,color=\"#28A3C7\",fillcolor=\"#28A3C7\",style=\"filled\"];\n";
+		    					JsonObject chainJson = new JsonObject();
+		    					chainJson.addProperty("name", chainIdForDot);
+		    					chainJson.addProperty("featureName", refChainId);
+		    					chainJson.addProperty("labelName", chainId+description);
+		    					chainJson.addProperty("color", "#28A3C7");
+	    						nodes.add(gson.toJson(chainJson));
+	    						
 	    					}
 	    				}
 	    			}catch(Exception e){
@@ -785,8 +899,12 @@ public class GraphHelper {
 	    						continue;
 	    					}
 
-	    					result += chainIdForDot+"_handler"+ " [label=\""+handler.getChainId()+"_handler\",shape=box,fontcolor=white,color=\"#FF462A\",fillcolor=\"#FF462A\",style=\"filled\"];\n";
-	    					result += chainIdForDot+"_handler"+" -> "+chainIdForDot+";\n";
+	    					JsonObject eventJson = new JsonObject();
+	    					eventJson.addProperty("name", chainIdForDot+"_handler");
+	    					eventJson.addProperty("labelName", handler.getChainId()+"_handler");
+	    					eventJson.addProperty("color", "#FF462A");
+    						nodes.add(gson.toJson(eventJson));
+    						transitions.add(chainIdForDot+"_handler"+" -> "+chainIdForDot);
 
 	    					if(nbEvents > 0){
 	    						events += "->";
@@ -806,8 +924,11 @@ public class GraphHelper {
 			    				}else{
 			    					nbAutomationChains ++;
 			    				}
-		    					result += chainIdForDot+ " [label=\""+handler.getChainId()+"\",shape=box,fontcolor=white,color=\"#28A3C7\",fillcolor=\"#28A3C7\",style=\"filled\"];\n";
-		    					
+		    					JsonObject chainJson = new JsonObject();
+		    					chainJson.addProperty("name", chainIdForDot);
+		    					chainJson.addProperty("labelName", handler.getChainId());
+		    					chainJson.addProperty("color", "#28A3C7");
+	    						nodes.add(gson.toJson(chainJson));
 		    				}
 
 
@@ -900,9 +1021,14 @@ public class GraphHelper {
 							    					automationList.add(inputChain);
 						    					
 							    					String refChainId = inputChain.startsWith("javascript.")? inputChain.replace("javascript.", "")+".scriptedOperation" : inputChain+".ops";
-							    					result += inputChain + " [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+refChainId+"\", label=\""+inputChain+"\",shape=box,fontcolor=white,color=\"#28A3C7\",fillcolor=\"#28A3C7\",style=\"filled\"];\n";
+							    					JsonObject inputChainJson = new JsonObject();
+							    					inputChainJson.addProperty("name", refChainId);
+							    					inputChainJson.addProperty("featureName", refChainId);
+							    					inputChainJson.addProperty("labelName", refChainId);
+							    					inputChainJson.addProperty("color", "#28A3C7");
+						    						nodes.add(gson.toJson(inputChainJson));
 						    					}
-							    				result += task + " -> "+ inputChain+";\n";
+						    					transitions.add(task + " -> "+ inputChain);
 						    				}
 					    				}
 					    				if(nodeList == null || (nodeList != null && nodeList.contains(outputChain))){
@@ -920,9 +1046,14 @@ public class GraphHelper {
 							    					automationList.add(outputChain);
 						    					
 							    					String refChainId = outputChain.startsWith("javascript.")? outputChain.replace("javascript.", "")+".scriptedOperation" : outputChain+".ops";
-							    					result += outputChain + " [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+refChainId+"\", label=\""+outputChain+"\",shape=box,fontcolor=white,color=\"#28A3C7\",fillcolor=\"#28A3C7\",style=\"filled\"];\n";
+							    					JsonObject outputChainJson = new JsonObject();
+							    					outputChainJson.addProperty("name", refChainId);
+							    					outputChainJson.addProperty("featureName", refChainId);
+							    					outputChainJson.addProperty("labelName", outputChain);
+							    					outputChainJson.addProperty("color", "#28A3C7");
+						    						nodes.add(gson.toJson(outputChainJson));
 						    					}
-							    				result += task + " -> "+ outputChain+";\n";
+						    					transitions.add(task + " -> "+ outputChain);
 						    				}
 					    				}
 					    				
@@ -933,7 +1064,12 @@ public class GraphHelper {
 					    				if(nodeList == null || (nodeList != null && nodeList.contains(outputChain)) || (nodeList != null && nodeList.contains(inputChain))){
 						    				if(!wfTasks.contains(task)){
 						    					String taskName = tr.getId()+"\n"+title+ (!desc.equals("")? "\n"+desc :"");
-						    					result += task + " [URL=\""+CONNECT_URL+studioProjectName+"#@feature:"+tr.getId()+".workflow\", label=\""+taskName+"\",shape=box,fontcolor=white,color=\"#1BB249\",fillcolor=\"#1BB249\",style=\"filled\"];\n";
+						    					JsonObject taskJson = new JsonObject();
+						    					taskJson.addProperty("name", task);
+						    					taskJson.addProperty("featureName", tr.getId()+".workflow");
+						    					taskJson.addProperty("labelName", taskName);
+						    					taskJson.addProperty("color", "#1BB249");
+					    						nodes.add(gson.toJson(taskJson));
 						    					if(nbWfTasks>0){
 						    						wfTasks += "->"; 
 						    					}
@@ -955,16 +1091,24 @@ public class GraphHelper {
 	    	}
 	    }
 
-		userActions += (nbUserActions>1?" [style=invis]":"")+";\n}";
-		automationChainsAndScripting += (nbAutomationChains>1?" [style=invis]":"")+";\n}";
-		events += (nbEvents>1?" [style=invis]":"")+";\n}";
-		wfTasks += (nbWfTasks>1?" [style=invis]":"")+";\n}";
+		userActions += (nbUserActions>1?" [style=invis]":"");
+		automationChainsAndScripting += (nbAutomationChains>1?" [style=invis]":"");
+		events += (nbEvents>1?" [style=invis]":"");
+		wfTasks += (nbWfTasks>1?" [style=invis]":"");
 		
-	    result += (nbUserActions>0 ? userActions: "")+"\n"+((nbAutomationChains+ nbAutomationScripting >0)? automationChainsAndScripting:"")+"\n"+(nbEvents>0? events: "")+"\n"+(nbWfTasks>0? wfTasks: "")+"\n";
-    	result += "}";
+		data.put("nodes", nodes);
+    	data.put("transitions", transitions);
+    	if(nbUserActions>0) data.put("userActions", userActions);
+    	if(nbAutomationChains>0) data.put("automationChainsAndScripting", automationChainsAndScripting);
+    	if(nbEvents>0) data.put("events", events);
+    	if(nbWfTasks>0) data.put("wfTasks", wfTasks);
 
-	    writeToFile(studiovizFolderPath+File.separator+File.separator+"inputBusinessRules.dot", result);
-
+        // File output
+        Writer file = new FileWriter (new File(studiovizFolderPath+File.separator+File.separator+"inputBusinessRules.dot"));
+        template.process(data, file);
+        file.flush();
+        file.close();
+        
 	    CmdParameters parameters = new CmdParameters();
 
 	    //Generate png from dot
@@ -975,13 +1119,9 @@ public class GraphHelper {
 
 	    JsonObject json = new JsonObject();
 	    byte[] bytesEncoded;
-		try {
-			bytesEncoded = Base64.encodeBase64(FileUtils.readFileToByteArray(new File(studiovizFolderPath+File.separator+"imgBusinessRules.png")));			
-			json.addProperty("img", "data:image/png;base64,"+new String(bytesEncoded));
-		} catch (IOException e) {
-			logger.error("Error while getting the generated image",e);
-		}
-	    
+		bytesEncoded = Base64.encodeBase64(FileUtils.readFileToByteArray(new File(studiovizFolderPath+File.separator+"imgBusinessRules.png")));			
+		json.addProperty("img", "data:image/png;base64,"+new String(bytesEncoded));
+			    
 	    //Generate map from dot
 	    parameters.addNamedParameter("format", "cmapx");
 	    parameters.addNamedParameter("outputFile", studiovizFolderPath+File.separator+"imgBusinessRules.cmapx");
@@ -990,7 +1130,4 @@ public class GraphHelper {
 	    json.addProperty("map", URLEncoder.encode(map,"UTF-8"));
 	    return json;
 	}
-	
-
-
 }

@@ -5,8 +5,6 @@
 package org.nuxeo.studioviz;
 
 import java.io.File;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.security.CodeSource;
 import java.util.ArrayList;
 

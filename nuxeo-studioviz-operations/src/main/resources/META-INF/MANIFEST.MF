@@ -7,7 +7,6 @@ Bundle-ActivationPolicy: lazy
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ManifestVersion: 2
 Bundle-Vendor: Nuxeo
-Nuxeo-Component: OSGI-INF/extensions/org.nuxeo.studioviz.GenerateGraph
- .xml,OSGI-INF/extensions/graphvizcmd.xml,OSGI-INF/extensions/org.nuxe
- o.studioviz.GenerateContextualGraph.xml
+Nuxeo-Component: OSGI-INF/extensions/graphvizcmd.xml,OSGI-INF/extensio
+ ns/org.nuxeo.studioviz.operations.xml
 
