@@ -2,42 +2,51 @@ package org.nuxeo.studioviz.test;
 
 import static org.junit.Assert.assertTrue;
 
-import java.io.File;
+import javax.inject.Inject;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.nuxeo.ecm.platform.commandline.executor.service.CommandLineExecutorComponent;
-import org.nuxeo.studioviz.GenerateGraph;
+import org.nuxeo.common.utils.FileUtils;
 import org.nuxeo.runtime.test.runner.Deploy;
+import org.nuxeo.runtime.test.runner.Features;
 import org.nuxeo.runtime.test.runner.FeaturesRunner;
-import org.nuxeo.runtime.test.runner.LocalDeploy;
+import org.nuxeo.runtime.test.runner.RuntimeFeature;
+import org.nuxeo.studioviz.service.StudioVizService;
+
+import com.google.gson.JsonObject;
 
 @RunWith(FeaturesRunner.class)
-@Deploy({"nuxeo-graphviz-operations"})
-@LocalDeploy({ "nuxeo-graphviz-operations:graphvizcmd.xml" })
+@Features(RuntimeFeature.class)
+@Deploy({"org.nuxeo.ecm.platform.commandline.executor", "org.nuxeo.connect.client","nuxeo-studioviz"})
+
 public class TestGenerateGraph {
 	
+	@Inject
+	StudioVizService studiovizservice;
+	
 	@Test
-    public void testExtractXMLFromStudioJar() throws Exception {
-		/*GenerateGraph gg = new GenerateGraph();
-		String graphVizFolderPath = getClass().getResource("/GraphViz").getFile();		
-		gg.extractXMLFromStudioJar("mgena-SANDBOX.jar", graphVizFolderPath);
-		File xml = new File(graphVizFolderPath+File.separator+"OSGI-INF"+File.separator+"extensions.xml");
-		assertTrue(xml.exists());*/
+    public void testGenerateModelGraphFromXML() throws Exception {
+		String studiovizFolderPath = FileUtils.getResourcePathFromContext("GraphViz/mgena-SANDBOX.jar");
+		JsonObject json = studiovizservice.generateModelGraphFromXML(studiovizFolderPath, null);
+		assertTrue("img file not generated",json.has("img"));		
+		assertTrue("img file not generated",json.has("map"));			
 	}
 	
 	@Test
-    public void testGenerateGraphFromXML() throws Exception {
-		/*GenerateGraph gg = new GenerateGraph();
-		String graphVizFolderPath = getClass().getResource("/GraphViz").getFile();		
-		gg.extractXMLFromStudioJar("mgena-SANDBOX.jar", graphVizFolderPath);
-		CommandLineExecutorComponent commandLineExecutorComponent = new CommandLineExecutorComponent();
-		gg.generateModelGraphFromXML("mgena-SANDBOX", graphVizFolderPath, graphVizFolderPath, commandLineExecutorComponent);
-		File dot = new File(graphVizFolderPath+File.separator+"inputModel.dot");
-		assertTrue("input.dot file not generated",dot.exists());		
-		File png = new File(graphVizFolderPath+File.separator+"imgModel.png");
-		assertTrue("img.png file not generated",png.exists());
-		File cmapx = new File(graphVizFolderPath+File.separator+"imgModel.cmapx");
-		assertTrue("img.cmapx file not generated",cmapx.exists());*/
+    public void testGenerateViewGraphFromXML() throws Exception {
+		String studiovizFolderPath = FileUtils.getResourcePathFromContext("GraphViz/mgena-SANDBOX.jar");
+		JsonObject json = studiovizservice.generateViewGraphFromXML(studiovizFolderPath, null);
+		assertTrue("img file not generated",json.has("img"));		
+		assertTrue("img file not generated",json.has("map"));			
 	}
+	
+	@Test
+    public void testGenerateBusinessRulesGraphFromXML() throws Exception {
+		String studiovizFolderPath = FileUtils.getResourcePathFromContext("GraphViz/mgena-SANDBOX.jar");
+		JsonObject json = studiovizservice.generateBusinessRulesGraphFromXML(studiovizFolderPath, null);
+		assertTrue("img file not generated",json.has("img"));		
+		assertTrue("img file not generated",json.has("map"));			
+	}
+	
+	
 }

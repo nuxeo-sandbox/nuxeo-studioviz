@@ -168,8 +168,8 @@
       _isDefined: function(response) {
         if ((typeof response !== 'undefined') && (response !== '') && (response !== null)) {
           json = JSON.parse(response);
-          this.automationList = json.automationList;
-          this.selectedAutomationList = json.automationList;
+          this.automationList = JSON.parse(json.businessRules.automationList);
+          this.selectedAutomationList =  JSON.parse(json.businessRules.automationList);
           this.cmapxView = decodeURIComponent(json.view.map).replace(new RegExp("\\+", 'g'), " ");
           this.cmapxModel = decodeURIComponent(json.model.map).replace(new RegExp("\\+", 'g'), " ");
           this.cmapxBusinessRules = decodeURIComponent(json.businessRules.map).replace(new RegExp("\\+", 'g'), " ");

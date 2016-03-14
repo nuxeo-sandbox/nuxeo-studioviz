@@ -12,16 +12,15 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.nuxeo.common.Environment;
 import org.nuxeo.ecm.automation.core.Constants;
 import org.nuxeo.ecm.automation.core.annotations.Operation;
 import org.nuxeo.ecm.automation.core.annotations.OperationMethod;
 import org.nuxeo.ecm.automation.core.annotations.Param;
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.impl.blob.StringBlob;
-import org.nuxeo.ecm.platform.commandline.executor.service.CommandLineExecutorComponent;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.studioviz.helper.GraphHelper;
+import org.nuxeo.studioviz.service.StudioVizService;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -48,14 +47,13 @@ public class GenerateContextualGraph {
     	JsonObject mapViewJson = new JsonObject();
     	JsonObject businessRulesJson = new JsonObject();
     	String url = "";
-    	CommandLineExecutorComponent commandLineExecutorComponent = new CommandLineExecutorComponent();
-    	String nuxeoHomePath = Environment.getDefault().getServerHome().getAbsolutePath();
-    	
+ 
     	GraphHelper gh = new GraphHelper();
-    	
+    	StudioVizService svs = Framework.getService(StudioVizService.class);
+
     	try {
 		    studioJar = gh.getStudioJar();
-
+		    
 		    //build the studio jar path
 		    CodeSource src = Framework.class.getProtectionDomain().getCodeSource();
 		    if (src != null) {
@@ -64,11 +62,6 @@ public class GenerateContextualGraph {
 		    	url = url.replace(path[path.length-1], studioJar);
 		    	url = url.replace("file:","");
 		    }
-
-		    gh.copyStudioJar(url, studioJar, nuxeoHomePath, commandLineExecutorComponent);
-		    String studiovizFolderPath = nuxeoHomePath+File.separator+"studioviz";
-		    gh.extractXMLFromStudioJar(studioJar, studiovizFolderPath);
-		    String studioProjectName = studioJar.replace(".jar", "");
 		    
 		    List<String> nodeList = new ArrayList<String>();
 		    if(!("").equals(nodes)){
@@ -76,11 +69,11 @@ public class GenerateContextualGraph {
 		    	nodeList = Arrays.asList(nodeArray);
 		    }
 		    if(("model").equals(graphType)){
-		    	mapModelJson = gh.generateModelGraphFromXML(studioProjectName, studiovizFolderPath, commandLineExecutorComponent, nodeList);
+		    	mapModelJson = svs.generateModelGraphFromXML(url, nodeList);
 		    }else if(("view").equals(graphType)){
-		    	mapViewJson = gh.generateViewGraphFromXML(studioProjectName, studiovizFolderPath, commandLineExecutorComponent, nodeList);
+		    	mapViewJson = svs.generateViewGraphFromXML(url, nodeList);
 		    }else if("businessRules".equals(graphType)){
-		    	businessRulesJson = gh.generateBusinessRulesGraphFromXML(studioProjectName, studiovizFolderPath, commandLineExecutorComponent, nodeList);
+		    	businessRulesJson = svs.generateBusinessRulesGraphFromXML(url, nodeList);
 		    }		    
 	    } catch (Exception e) {
 	      logger.error("Exception while ",e);

@@ -8,5 +8,7 @@ Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ManifestVersion: 2
 Bundle-Vendor: Nuxeo
 Nuxeo-Component: OSGI-INF/extensions/graphvizcmd.xml,OSGI-INF/extensio
- ns/org.nuxeo.studioviz.operations.xml
+ ns/org.nuxeo.studioviz.operations.xml,OSGI-INF/extensions/org.nuxeo.s
+ tudioviz.service.GraphVizService.xml,OSGI-INF/extensions/org.nuxeo.st
+ udioviz.service.StudioVizService.xml
 

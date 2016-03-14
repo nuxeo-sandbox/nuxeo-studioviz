@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+
+<component name="org.nuxeo.studioviz.service.StudioVizService" version="1.0">
+
+  <implementation class="org.nuxeo.studioviz.service.StudioVizService" />
+
+  <service>
+      <provide interface="org.nuxeo.studioviz.service.StudioVizService" />
+  </service>
+    
+</component>

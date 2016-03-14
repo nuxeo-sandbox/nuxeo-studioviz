@@ -10,15 +10,14 @@ import java.util.ArrayList;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.nuxeo.common.Environment;
 import org.nuxeo.ecm.automation.core.Constants;
 import org.nuxeo.ecm.automation.core.annotations.Operation;
 import org.nuxeo.ecm.automation.core.annotations.OperationMethod;
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.impl.blob.StringBlob;
-import org.nuxeo.ecm.platform.commandline.executor.service.CommandLineExecutorComponent;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.studioviz.helper.GraphHelper;
+import org.nuxeo.studioviz.service.StudioVizService;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -40,14 +39,12 @@ public class GenerateGraph {
     	JsonObject  mapViewJson = new JsonObject();
     	JsonObject businessRulesJson = new JsonObject();
     	String url = "";
-    	CommandLineExecutorComponent commandLineExecutorComponent = new CommandLineExecutorComponent();
-    	String nuxeoHomePath = Environment.getDefault().getServerHome().getAbsolutePath();
-    	
+    		
     	GraphHelper gh = new GraphHelper();
-    	
+    	StudioVizService svs = Framework.getService(StudioVizService.class);
     	try {
 		    studioJar = gh.getStudioJar();
-
+		   
 		    //build the studio jar path
 		    CodeSource src = Framework.class.getProtectionDomain().getCodeSource();
 		    if (src != null) {
@@ -55,28 +52,19 @@ public class GenerateGraph {
 		    	String path[] = url.split(File.separator);
 		    	url = url.replace(path[path.length-1], studioJar);
 		    	url = url.replace("file:","");
-		    }
-
-		    gh.copyStudioJar(url, studioJar, nuxeoHomePath, commandLineExecutorComponent);
-		    String studiovizFolderPath = nuxeoHomePath+File.separator+"studioviz";
-		    gh.extractXMLFromStudioJar(studioJar, studiovizFolderPath);
-		    String studioProjectName = studioJar.replace(".jar", "");
-
-		    mapModelJson = gh.generateModelGraphFromXML(studioProjectName, studiovizFolderPath, commandLineExecutorComponent, null);
-
-		    mapViewJson = gh.generateViewGraphFromXML(studioProjectName, studiovizFolderPath, commandLineExecutorComponent, null);
-
-		    businessRulesJson = gh.generateBusinessRulesGraphFromXML(studioProjectName, studiovizFolderPath, commandLineExecutorComponent, null);
-
+		    }		    
+		    
+		    mapModelJson = svs.generateModelGraphFromXML(url, null);
+		    mapViewJson = svs.generateViewGraphFromXML(url, null);
+		    businessRulesJson = svs.generateBusinessRulesGraphFromXML(url, null);
 	    } catch (Exception e) {
 	      logger.error("Exception while ",e);
 	    }
-    	ArrayList<String> automationList = gh.getAutomationList();
-    	String json = new Gson().toJson(automationList);
+    
     	String businessRules = new Gson().toJson(businessRulesJson);
     	String mapView = new Gson().toJson(mapViewJson);
     	String mapModel = new Gson().toJson(mapModelJson);
-		return new StringBlob("{\"model\":"+mapModel+", \"view\": "+mapView+", \"businessRules\": "+businessRules+", \"automationList\": "+json+"}");		
+		return new StringBlob("{\"model\":"+mapModel+", \"view\": "+mapView+", \"businessRules\": "+businessRules+"}");		
     }
 
 }
