@@ -913,57 +913,9 @@ public class StudioVizService extends DefaultComponent {
 	    				logger.error("Error when getting Chains", e);
 	    			}
 	    			break;
-	    		case EXTENSIONPOINT_EVENT_HANDLERS :
-	    			try{
-	    				List<Handler> handlers = extension.getHandler();
-	    				for(Handler handler:handlers){
-	    					handler.getChainId();
-	    					String chainIdForDot = GraphHelper.cleanUpForDot(handler.getChainId());
-	    					
-	    					if(nodeList != null && !nodeList.contains(chainIdForDot)){
-	    						continue;
-	    					}
-
-	    					JsonObject eventJson = new JsonObject();
-	    					eventJson.addProperty("name", chainIdForDot+"_handler");
-	    					eventJson.addProperty("labelName", handler.getChainId()+"_handler");
-	    					eventJson.addProperty("color", "#FF462A");
-    						nodes.add(gson.toJson(eventJson));
-    						transitions.add(chainIdForDot+"_handler"+" -> "+chainIdForDot);
-
-	    					if(nbEvents > 0){
-	    						events += "->";
-	    					}
-	    					events += GraphHelper.cleanUpForDot(handler.getChainId())+"_handler";
-	    					nbEvents ++;
-
-	    					if(!automationList.contains(chainIdForDot)){
-		    					if(nbAutomationChains >0 || nbAutomationScripting >0){
-		    						automationChainsAndScripting += "->";
-			    				}
-
-		    					automationChainsAndScripting += chainIdForDot;
-		    					automationList.add(chainIdForDot);
-		    					if(chainIdForDot.startsWith("javascript")){
-			    					nbAutomationScripting ++;
-			    				}else{
-			    					nbAutomationChains ++;
-			    				}
-		    					JsonObject chainJson = new JsonObject();
-		    					chainJson.addProperty("name", chainIdForDot);
-		    					chainJson.addProperty("labelName", handler.getChainId());
-		    					chainJson.addProperty("color", "#28A3C7");
-	    						nodes.add(gson.toJson(chainJson));
-		    				}
-	    				}
-	    			}catch(Exception e){
-	    				logger.error("Error when getting Event Handlers", e);
-	    			}
-	    			break;
 	    		case EXTENSIONPOINT_ROUTE_MODEL_IMPORTER :
 		    		List<TemplateResource> trList = extension.getTemplateResource();
 		    		for(TemplateResource tr : trList){
-		    			Runtime rt = Runtime.getRuntime();
 		    			
 		    			entries = file.entries();
 		    	        while(entries.hasMoreElements()) {
@@ -1131,19 +1083,85 @@ public class StudioVizService extends DefaultComponent {
 		    		break;
 	    	}
 	    }
+		
+		//Deal with the Event Handlers		
+		entries = file.entries();
+        while(entries.hasMoreElements()) {
+            JarEntry entry = entries.nextElement();
+            if (entry.getName().endsWith(".evt.xml")) {
+                try(InputStream is = file.getInputStream(entry)) {
+	    			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+	    			factory.setNamespaceAware(true);
+	    			DocumentBuilder db;
+	    			db = factory.newDocumentBuilder();
+	    			Document doc = db.parse(is);
+	    			
+	    			NodeList nodeId = doc.getElementsByTagName("events");
+	    			String eventHandlerId = nodeId.item(0).getAttributes().getNamedItem("id").getNodeValue();
+	    			String eventHandlerIdForDot = GraphHelper.cleanUpForDot(eventHandlerId);
+	    			eventHandlerIdForDot += eventHandlerIdForDot+"_evt";
+	    			
+	    			NodeList nodeChainId = doc.getElementsByTagName("chain");
+	    			String chainId = nodeChainId.item(0).getTextContent();
+	    			String chainIdForDot = GraphHelper.cleanUpForDot(chainId);
+	    			
+					if(nodeList != null && !nodeList.contains(chainIdForDot)){
+						continue;
+					}
 
+					JsonObject eventJson = new JsonObject();
+					eventJson.addProperty("name", eventHandlerIdForDot);
+					eventJson.addProperty("featureName", eventHandlerId+".evt");
+					eventJson.addProperty("labelName", eventHandlerId);
+					eventJson.addProperty("color", "#FF462A");
+					nodes.add(gson.toJson(eventJson));
+					transitions.add(eventHandlerIdForDot+" -> "+chainIdForDot);
+
+					if(nbEvents > 0){
+						events += "->";
+					}
+					events += eventHandlerIdForDot;
+					nbEvents ++;
+
+					//Normally we won't go through this
+					//as we already parsed all the automation chains previously
+					if(!automationList.contains(chainIdForDot)){
+    					if(nbAutomationChains >0 || nbAutomationScripting >0){
+    						automationChainsAndScripting += "->";
+	    				}
+
+    					automationChainsAndScripting += chainIdForDot;
+    					automationList.add(chainIdForDot);
+    					if(chainIdForDot.startsWith("javascript")){
+	    					nbAutomationScripting ++;
+	    				}else{
+	    					nbAutomationChains ++;
+	    				}
+    					String refChainId = chainId.startsWith("javascript.")? chainId.replace("javascript.", "")+".scriptedOperation" : chainId+".ops";
+
+    					JsonObject chainJson = new JsonObject();
+    					chainJson.addProperty("name", chainIdForDot);
+    					chainJson.addProperty("featureName", refChainId);
+    					chainJson.addProperty("labelName", chainId);
+    					chainJson.addProperty("color", "#28A3C7");
+						nodes.add(gson.toJson(chainJson));
+    				}	    			
+                } catch (ParserConfigurationException e) {
+					logger.error("Error while getting Event Handlers", e);
+				} catch (SAXException e) {
+					logger.error("Error while getting Event Handlers", e);
+				}
+            }
+        }
+		
 		userActions += (nbUserActions>1?" [style=invis]":"");
-		automationChainsAndScripting += (nbAutomationChains >0 || nbAutomationScripting >0?" [style=invis]":"");
+		automationChainsAndScripting += ((nbAutomationChains+nbAutomationScripting) >1 ?" [style=invis]":"");
 		events += (nbEvents>1?" [style=invis]":"");
 		wfTasks += (nbWfTasks>1?" [style=invis]":"");
 		
 		data.put("nodes", nodes);
     	data.put("transitions", transitions);
     	if(nbUserActions>0) data.put("userActions", userActions);
-    	
-    	logger.error(nbAutomationChains +" "+ nbAutomationScripting);
-    	logger.error("automation scripting: "+automationChainsAndScripting);
-    	
     	
     	if(nbAutomationChains >0 || nbAutomationScripting >0) data.put("automationChainsAndScripting", automationChainsAndScripting);
     	if(nbEvents>0) data.put("events", events);
@@ -1168,7 +1186,7 @@ public class StudioVizService extends DefaultComponent {
 	    map = FileUtils.readFileToString(cmapFilePath.toFile());
 	    json.addProperty("map", URLEncoder.encode(map,"UTF-8"));
 	    
-	    
+	    Collections.sort(automationList);
 	    json.addProperty("automationList", new Gson().toJson(automationList));
 	    return json;
 	}

@@ -44,7 +44,7 @@ public class GenerateGraph {
     	StudioVizService svs = Framework.getService(StudioVizService.class);
     	try {
 		    studioJar = gh.getStudioJar();
-		   
+		    
 		    //build the studio jar path
 		    CodeSource src = Framework.class.getProtectionDomain().getCodeSource();
 		    if (src != null) {
