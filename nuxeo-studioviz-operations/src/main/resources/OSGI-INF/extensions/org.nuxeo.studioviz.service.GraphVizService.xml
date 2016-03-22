@@ -2,7 +2,7 @@
 
 <component name="org.nuxeo.studioviz.service.GraphVizService" version="1.0">
 
-  <implementation class="org.nuxeo.studioviz.service.GraphVizService" />
+  <implementation class="org.nuxeo.studioviz.service.GraphVizComponent" />
 
   <service>
       <provide interface="org.nuxeo.studioviz.service.GraphVizService" />

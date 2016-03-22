@@ -2,7 +2,7 @@
 
 <component name="org.nuxeo.studioviz.service.StudioVizService" version="1.0">
 
-  <implementation class="org.nuxeo.studioviz.service.StudioVizService" />
+  <implementation class="org.nuxeo.studioviz.service.StudioVizComponent" />
 
   <service>
       <provide interface="org.nuxeo.studioviz.service.StudioVizService" />
