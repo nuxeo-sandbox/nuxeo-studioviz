@@ -50,7 +50,6 @@ import org.nuxeo.jaxb.Component.Extension.Action.Filter.Rule;
 import org.nuxeo.jaxb.Component.Extension.Action.Filter.Rule.Type;
 import org.nuxeo.jaxb.Component.Extension.Chain;
 import org.nuxeo.jaxb.Component.Extension.Doctype;
-import org.nuxeo.jaxb.Component.Extension.Handler;
 import org.nuxeo.jaxb.Component.Extension.Schema;
 import org.nuxeo.jaxb.Component.Extension.TemplateResource;
 import org.nuxeo.jaxb.Component.Extension.Type.ContentViews;
@@ -87,14 +86,11 @@ public class StudioVizService extends DefaultComponent {
     private static final String EXTENSIONPOINT_SCHEMAS = "schema";
     private static final String EXTENSIONPOINT_DOCTYPE = "doctype";
     private static final String COMMON_SCHEMAS = "common,dublincore,uid,task,file,picture,image_metadata,iptc,publishing,webcontainer,files";
-    private static final String CONNECT_URL = "https://connect.nuxeo.com/nuxeo/site/studio/ide?project=";
     private static final String EXTENSIONPOINT_TYPES = "types";
     private static final String EXTENSIONPOINT_CHAIN = "chains";
-    private static final String EXTENSIONPOINT_EVENT_HANDLERS = "event-handlers";
     private static final String EXTENSIONPOINT_ACTIONS = "actions";
     private static final String EXTENSIONPOINT_ROUTE_MODEL_IMPORTER = "routeModelImporter";
  
-   
 	public Bundle getBundle() {
         return bundle;
     }
