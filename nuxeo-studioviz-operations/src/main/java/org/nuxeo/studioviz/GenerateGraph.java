@@ -6,7 +6,6 @@ package org.nuxeo.studioviz;
 
 import java.io.File;
 import java.security.CodeSource;
-import java.util.ArrayList;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

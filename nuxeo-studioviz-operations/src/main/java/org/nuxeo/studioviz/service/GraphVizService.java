@@ -15,6 +15,6 @@ import org.nuxeo.ecm.platform.commandline.executor.api.CommandNotAvailable;
  */
 public interface GraphVizService {
 
-    public String generate(Blob blob, String inputFilePath, String outputFilePath, String format) throws CommandNotAvailable, IOException;
+    public Blob generate(Blob blob, String inputFilePath, String outputFilePath, String format) throws CommandNotAvailable, IOException;
     
 }

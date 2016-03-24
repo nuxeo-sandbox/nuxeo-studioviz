@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -43,6 +44,7 @@ import org.apache.commons.logging.LogFactory;
 import org.nuxeo.common.Environment;
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.impl.blob.FileBlob;
+import org.nuxeo.ecm.core.event.impl.EventListenerDescriptor;
 import org.nuxeo.ecm.platform.commandline.executor.api.CommandNotAvailable;
 import org.nuxeo.jaxb.Component;
 import org.nuxeo.jaxb.Component.Extension;
@@ -61,6 +63,7 @@ import org.nuxeo.jaxb.Component.Extension.Type.Layouts.Layout;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.model.ComponentContext;
 import org.nuxeo.runtime.model.DefaultComponent;
+import org.nuxeo.runtime.model.RegistrationInfo;
 import org.nuxeo.studioviz.helper.GraphHelper;
 import org.osgi.framework.Bundle;
 import org.w3c.dom.Document;
@@ -193,15 +196,20 @@ public class StudioVizComponent extends DefaultComponent implements StudioVizSer
     	
     	GraphVizService gvs = Framework.getService(GraphVizService.class);
         
-        String imgFilePath= gvs.generate(blob, input, img, "png");
-        String cmapFilePath = gvs.generate(blob, input, cmapx, "cmapx");
+    	Blob imgFileBlob = gvs.generate(blob, input, img, "png");
+    	Blob cmapFileBlob = gvs.generate(blob, input, cmapx, "cmapx");
 	    JsonObject json = new JsonObject();
-	    byte[] bytesEncoded;		
-		bytesEncoded = Base64.encodeBase64(FileUtils.readFileToByteArray(new File(imgFilePath)));			
+	    byte[] bytesEncoded;
+	   
+		bytesEncoded = Base64.encodeBase64(imgFileBlob.getByteArray());			
 		json.addProperty("img", "data:image/png;base64,"+new String(bytesEncoded));
 		
-	    String map = FileUtils.readFileToString(new File(cmapFilePath));
+	    String map = cmapFileBlob.getString();
 	    json.addProperty("map", URLEncoder.encode(map,"UTF-8"));
+	    
+	    //Delete temporary directory
+	    GraphHelper.deleteFolder(imgFileBlob.getFile().getParentFile());
+	    
 	    return json;
     }
 

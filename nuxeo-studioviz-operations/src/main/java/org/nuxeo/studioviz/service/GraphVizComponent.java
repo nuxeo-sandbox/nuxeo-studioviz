@@ -12,12 +12,14 @@ import java.nio.file.Paths;
 
 import org.nuxeo.common.Environment;
 import org.nuxeo.ecm.core.api.Blob;
+import org.nuxeo.ecm.core.api.impl.blob.FileBlob;
 import org.nuxeo.ecm.platform.commandline.executor.api.CmdParameters;
 import org.nuxeo.ecm.platform.commandline.executor.api.CommandNotAvailable;
 import org.nuxeo.ecm.platform.commandline.executor.service.CommandLineExecutorComponent;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.model.ComponentContext;
 import org.nuxeo.runtime.model.DefaultComponent;
+import org.nuxeo.studioviz.helper.GraphHelper;
 import org.osgi.framework.Bundle;
 
 
@@ -81,11 +83,11 @@ public class GraphVizComponent extends DefaultComponent implements GraphVizServi
      * @param inputFileName the dot file name
      * @param outputFileName the output file name
      * @param format the format of the generation (png, cmapx etc.)
-  
+  	 * @return Blob
      * @throws CommandNotAvailable
      * @throws IOException 
      */
-    public String generate(Blob blob, String inputFileName, String outputFileName, String format) throws CommandNotAvailable, IOException{
+    public Blob generate(Blob blob, String inputFileName, String outputFileName, String format) throws CommandNotAvailable, IOException{
     	
     	//Create temporary directory
     	String tmpDir = Environment.getDefault().getTemp().getPath();
@@ -105,7 +107,9 @@ public class GraphVizComponent extends DefaultComponent implements GraphVizServi
 	    parameters.addNamedParameter("outputFile", outputFilePath.toString());
 	    commandLineExecutorComponent.execCommand("dot", parameters);	 
 	    
-	    return outputFilePath.toString();
+	    Blob outputblob = new FileBlob(new File(outputFilePath.toString()));
+	    
+	    return outputblob;
     }
     
 }

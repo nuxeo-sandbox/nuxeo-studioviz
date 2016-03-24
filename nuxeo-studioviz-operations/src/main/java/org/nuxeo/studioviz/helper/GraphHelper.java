@@ -97,5 +97,14 @@ public class GraphHelper {
 	            bos.write(bytesIn, 0, read);
 	        }
 	        bos.close();
-	    }
+	 }
+	 
+	 public static void deleteFolder(File folder){
+		 String[]entries = folder.list();
+		 for(String s: entries){
+		     File currentFile = new File(folder.getPath(),s);
+		     currentFile.delete();
+		 }
+		 folder.delete();
+	 }
 }
