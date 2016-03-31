@@ -16,7 +16,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -44,7 +43,6 @@ import org.apache.commons.logging.LogFactory;
 import org.nuxeo.common.Environment;
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.impl.blob.FileBlob;
-import org.nuxeo.ecm.core.event.impl.EventListenerDescriptor;
 import org.nuxeo.ecm.platform.commandline.executor.api.CommandNotAvailable;
 import org.nuxeo.jaxb.Component;
 import org.nuxeo.jaxb.Component.Extension;
@@ -63,7 +61,6 @@ import org.nuxeo.jaxb.Component.Extension.Type.Layouts.Layout;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.model.ComponentContext;
 import org.nuxeo.runtime.model.DefaultComponent;
-import org.nuxeo.runtime.model.RegistrationInfo;
 import org.nuxeo.studioviz.helper.GraphHelper;
 import org.osgi.framework.Bundle;
 import org.w3c.dom.Document;
@@ -1120,5 +1117,708 @@ public class StudioVizComponent extends DefaultComponent implements StudioVizSer
 	    Collections.sort(automationList);
 	    json.addProperty("automationList", new Gson().toJson(automationList));
 	    return json;
+	}
+
+	@Override
+	public Blob generateModelTextFromXML(String studioJarPath, List<String> nodeList)
+			throws JAXBException, CommandNotAvailable, IOException, TemplateException {
+		Component component = getComponent(studioJarPath);   
+        String studioProjectName = FilenameUtils.getBaseName(studioJarPath).replace("-"+GraphHelper.SNAPSHOT_SUFFIX, "");    	       
+        Template template = initializeFreemarker("inputModelText.ftl");
+        
+        // Build the data-model
+        Map<String, Object> data = new HashMap<String, Object>();
+        data.put("studioProjectName", studioProjectName);
+		
+        String facets = "";
+
+		List<Extension> extensions = component.getExtension();
+
+		int nbSchemas = 0;
+		int nbDocTypes = 0;
+		int nbFacets = 0;
+		ArrayList<String> docTypesList = new ArrayList<String>();
+		ArrayList<String> schemasList = new ArrayList<String>();
+		ArrayList<String> facetsList = new ArrayList<String>();
+		for(Extension extension:extensions){
+			String point = extension.getPoint();
+		    switch (point){
+	    		case EXTENSIONPOINT_SCHEMAS :
+	    			try{
+	    				List<Schema> schemaList = extension.getSchema();
+	    				for(Schema schema : schemaList){
+	    					String schemaName = schema.getName();
+	    					//Schemas starting with var_ are reserved for worfklow tasks
+	    					//Schemas ending with _cv are reserved for content views
+	    					if(schemaName != null && !schemaName.startsWith("var_") && !schemaName.endsWith("_cv") && !schemasList.contains(schemaName)){
+	    						schemasList.add(schemaName+"_sh");
+	    						nbSchemas ++;
+	    					}
+
+	    				}
+	    			}catch(Exception e){
+	    				logger.error("Error when getting schemas", e);
+	    			}
+	    			break;
+	    		case EXTENSIONPOINT_DOCTYPE :
+	    			try{
+	    				List<Doctype> docTypeList = extension.getDoctype();
+	    				for(Doctype docType : docTypeList){
+	    					String docTypeName = docType.getName();
+	    					//DocType ending with _cv are created for content views
+	    					if(docTypeName != null && !docTypeName.endsWith("_cv")){
+	    						
+	    						List<Doctype.Schema> extraSchemas = docType.getSchema();
+	    						for(Doctype.Schema extraSchema: extraSchemas){
+	    							//Don't include common schemas for the sake of visibility
+	    							if(!COMMON_SCHEMAS.contains(extraSchema.getName())){
+	    								
+	    								if(!schemasList.contains(extraSchema.getName()+"_sh")){
+		    	    						schemasList.add(extraSchema.getName()+"_sh");
+		    	    						nbSchemas ++;
+	    								}
+	    							}
+	    						}
+
+	    						List<Doctype.Facet> extraFacets = docType.getFacet();
+	    						for(Doctype.Facet extraFacet : extraFacets){
+	    							
+	    							if(!facets.contains(extraFacet.getName()+"_facet")){
+		    							
+		    							facets += extraFacet.getName()+"_facet";
+		    							nbFacets ++;
+		    							facetsList.add(extraFacet.getName());
+		    						}
+	    						}
+	    						
+	    						nbDocTypes ++;
+
+	    						if(!docTypesList.contains(docType.getExtends())){
+	    							docTypesList.add(docType.getExtends());
+	    							nbDocTypes ++;
+	    						}
+	    					}
+	    				}
+	    			}catch(Exception e){
+	    				logger.error("Error when getting document type", e);
+	    			}
+	    			break;
+	    	}
+	    }
+		
+		for(int i=0; i< schemasList.size(); i++){
+			String schema = schemasList.get(i);
+			schemasList.remove(i);
+			schemasList.add(i,schema.replace("_sh", ""));
+		}
+		
+		for(int i=0; i< facetsList.size(); i++){
+			String facet = facetsList.get(i);
+			facetsList.remove(i);
+			facetsList.add(i,facet.replace("_facet", ""));
+		}
+
+		Collections.sort(schemasList);
+		Collections.sort(docTypesList);
+		Collections.sort(facetsList);
+		
+    	if(nbSchemas>0) data.put("schemas", schemasList);
+    	if(nbDocTypes>0) data.put("docTypes", docTypesList);
+    	if(nbFacets>0) data.put("facets", facetsList);
+
+    	String tmpDir = Environment.getDefault().getTemp().getPath();
+    	Path tmpDirPath = tmpDir != null ? Paths.get(tmpDir) : null;
+    	Path outDirPath = tmpDirPath != null ? Files.createTempDirectory(tmpDirPath, "studioviz")
+    	                   : Framework.createTempDirectory(null);
+
+        // File output
+    	Path inputFilePath = Paths.get(outDirPath.toString(), "inputModelText.txt");
+    	try(Writer txtFile = new FileWriter (inputFilePath.toFile())){
+    		template.process(data, txtFile);
+    	}
+    	
+    	Blob blob = new FileBlob(new File(inputFilePath.toString()), "text/plain");
+    	
+	    return blob;
+	}
+
+	@Override
+	public Blob generateViewTextFromXML(String studioJarPath, List<String> nodeList)
+			throws JAXBException, CommandNotAvailable, IOException, TemplateException {
+		Component component = getComponent(studioJarPath);   
+        String studioProjectName = FilenameUtils.getBaseName(studioJarPath).replace("-"+GraphHelper.SNAPSHOT_SUFFIX, "");    	       
+        Template template = initializeFreemarker("inputViewText.ftl");
+        
+        // Build the data-model
+        Map<String, Object> data = new HashMap<String, Object>();
+        data.put("studioProjectName", studioProjectName);
+		
+       
+		String contentViews = "";
+		String formLayouts = "";
+		
+		List<Extension> extensions = component.getExtension();
+
+		int nbTabs = 0;
+		int nbDocTypes = 0;
+		int nbContentViews = 0;
+		int nbFormLayouts = 0;
+		ArrayList<String> docTypesList = new ArrayList<String>();
+		ArrayList<String> tabsList = new ArrayList<String>();
+		ArrayList<String> contentsList = new ArrayList<String>();
+		ArrayList<String> formLayoutsList = new ArrayList<String>();
+		for(Extension extension:extensions){
+			String point = extension.getPoint();
+		    switch (point){
+		    	case EXTENSIONPOINT_ACTIONS :
+		    		try{
+		    			List<Action> actions = extension.getAction();
+		    			for(Action action:actions){
+		    				String linkType = "";
+		    				try{
+		    					linkType = action.getType();
+		    					//handle the rest_document_link types as Tabs
+		    					if(linkType == null || !(linkType).equals("rest_document_link")){
+		    						continue;
+		    					}
+
+		    				}catch(Exception e){
+		    					logger.error("Error when getting chainId", e);
+		    				}
+		    				String cleanedActionId = GraphHelper.cleanUpForDot(action.getId());
+
+		    				Filter filter = action.getFilter();
+		    				if(filter != null){
+		    					List<Rule> rules = filter.getRule();
+		    					if(rules != null){
+		    						for(Rule rule: rules){
+		    							if("true".equals(rule.getGrant())){
+		    								List<Type> types = rule.getType();
+		    								if(types !=null){
+		    									for(Type type:types){
+		    										String docTypeName = type.getValue();
+		    					    				if(!docTypesList.contains(docTypeName)){
+		    		    								docTypesList.add(docTypeName);
+		    		    								nbDocTypes ++;
+		    					    				}
+
+		    									}
+		    								}
+		    							}
+		    						}
+		    					}
+		    				}
+		    				if(!tabsList.contains(cleanedActionId)){
+		    					tabsList.add(cleanedActionId);
+		    					nbTabs ++;
+		    				}
+		    			}
+		    		}catch(Exception e){
+		    			logger.error("Error when getting Actions", e);
+		    		}
+		    		break;
+
+	    		case EXTENSIONPOINT_TYPES :
+	    			try{
+	    				List<org.nuxeo.jaxb.Component.Extension.Type> typeList = extension.getType();
+	    				for(org.nuxeo.jaxb.Component.Extension.Type type : typeList){
+	    					String typeId = type.getId();
+
+	    					List<ContentViews> contentViewsList= type.getContentViews();
+	    					if(contentViewsList != null){
+	    						for(ContentViews cvs : contentViewsList){
+	    							ContentView contentView = cvs.getContentView();
+	    							if("content".equals(cvs.getCategory())){
+
+	    								if(!docTypesList.contains(typeId)){
+	    									
+	    									docTypesList.add(typeId);
+	    									nbDocTypes ++;
+	    			    				}
+
+	    								String contentViewName = contentView.getValue();
+	    								String cleanedContentViewName = GraphHelper.cleanUpForDot(contentView.getValue());
+	    								
+	    								if(!contentViews.contains(cleanedContentViewName)){
+		    		    					contentViews += cleanedContentViewName;
+		    		    					contentsList.add(cleanedContentViewName);
+		    		    					nbContentViews ++;
+	    								}
+	    							}
+	    						}
+	    					}
+	    						    					
+	    					//Handle Form Layouts
+	    					List<Layouts> layoutList = type.getLayouts();
+	    					for(Layouts layouts: layoutList){
+	    						Layout layout = layouts.getLayout();
+	    						if(layout != null && layout.getValue() != null &&!layout.getValue().startsWith("layout@") && !typeId.endsWith("_cv")){
+	    							String formLayoutName = layout.getValue().split("@")[0];
+	    							String cleanedFormLayoutName = GraphHelper.cleanUpForDot(layout.getValue().split("@")[0]);
+	    							if(!formLayoutsList.contains(cleanedFormLayoutName)){
+	    								
+	    								if(!docTypesList.contains(typeId)){
+	    									docTypesList.add(typeId);
+	    									nbDocTypes ++;
+	    			    				}
+	    								
+	    		    					formLayouts += cleanedFormLayoutName;
+	    		    					formLayoutsList.add(cleanedFormLayoutName);
+	    		    					nbFormLayouts ++;
+    								}
+	    						}
+	    					}
+	    					
+	    				}
+	    			}catch(Exception e){
+	    				logger.error("Error when getting document type", e);
+	    			}
+	    			break;
+	    	}
+	    }
+		
+		Collections.sort(tabsList);
+		Collections.sort(docTypesList);
+		Collections.sort(contentsList);
+		Collections.sort(formLayoutsList);
+
+    	if(nbTabs>0) data.put("tabs", tabsList);
+    	if(nbDocTypes>0) data.put("docTypes", docTypesList);
+    	if(nbContentViews>0) data.put("contentViews", contentsList);
+    	if(nbFormLayouts>0) data.put("formLayouts", formLayoutsList);
+
+		String tmpDir = Environment.getDefault().getTemp().getPath();
+    	Path tmpDirPath = tmpDir != null ? Paths.get(tmpDir) : null;
+    	Path outDirPath = tmpDirPath != null ? Files.createTempDirectory(tmpDirPath, "studioviz")
+    	                   : Framework.createTempDirectory(null);
+
+        // File output
+    	Path inputFilePath = Paths.get(outDirPath.toString(), "inputViewText.txt");
+    	try(Writer txtFile = new FileWriter (inputFilePath.toFile())){
+    		template.process(data, txtFile);
+    	}
+    	
+    	Blob blob = new FileBlob(new File(inputFilePath.toString()), "text/plain");
+    	
+	    return blob;
+		
+	}
+
+	@Override
+	public Blob generateBusinessRulesTextFromXML(String studioJarPath, List<String> nodeList)
+			throws JAXBException, CommandNotAvailable, IOException, TemplateException {
+		ArrayList<String> automationList = new ArrayList<String>();
+		
+		Component component = getComponent(studioJarPath);   
+        String studioProjectName = FilenameUtils.getBaseName(studioJarPath).replace("-"+GraphHelper.SNAPSHOT_SUFFIX, "");    	       
+        Template template = initializeFreemarker("inputBusinessRulesText.ftl");
+        
+        JarFile file = new JarFile(studioJarPath);
+        Enumeration<JarEntry> entries = file.entries();
+        
+        //Create temporary directory
+    	String tmpDir = Environment.getDefault().getTemp().getPath();
+    	Path tmpDirPath = tmpDir != null ? Paths.get(tmpDir) : null;
+    	Path outDirPath = tmpDirPath != null ? Files.createTempDirectory(tmpDirPath, "studioviz")
+    	                   : Framework.createTempDirectory(null);
+
+        // Build the data-model
+        Map<String, Object> data = new HashMap<String, Object>();
+        data.put("studioProjectName", studioProjectName);
+        
+		List<Extension> extensions = component.getExtension();
+		
+		ArrayList<String> userActionsList = new ArrayList<String>();
+		
+		ArrayList<String> eventsList = new ArrayList<String>();
+		ArrayList<String> wfTasksList = new ArrayList<String>();
+		
+		String pattern = "\\#\\{operationActionBean.doOperation\\('(.*)'\\)\\}";
+		// Create a Pattern object
+		Pattern r = Pattern.compile(pattern);
+		int nbUserActions = 0;
+		int nbAutomationChains = 0;
+		int nbAutomationScripting = 0;
+		int nbEvents = 0;
+		int nbWfTasks = 0;
+		
+		for(Extension extension:extensions){
+			String point = extension.getPoint();
+		    switch (point){
+		    	case EXTENSIONPOINT_ACTIONS :
+		    		try{
+		    			List<Action> actions = extension.getAction();
+		    			for(Action action:actions){
+		    				String chainId = "";		    				
+		    				try{
+		    					chainId = action.getLink();
+		    					if(chainId == null){
+		    						continue;
+		    					}
+		    					// Now create matcher object.
+		    				    Matcher m = r.matcher(chainId);
+		    				    if (m.find( )) {
+		    				    	chainId = m.group(1);
+		    				    }
+		    				}catch(Exception e){
+		    					logger.error("Error when getting chainId", e);
+		    				}
+		    				String cleanedActionId = GraphHelper.cleanUpForDot(action.getId());
+
+		    				if(chainId != null && !("").equals(chainId) && !(".").equals(chainId)  && !chainId.endsWith("xhtml")){
+		    					String cleanedChainId = GraphHelper.cleanUpForDot(chainId);
+		    					
+		    					//contextual graph
+		    					//skip this one if it's not in the list of Chains to display		 
+		    					if(nodeList != null && !nodeList.contains(cleanedChainId)){
+		    						continue;
+		    					}
+		    								    					
+		    					String refChainId = chainId.startsWith("javascript.")? chainId.replace("javascript.", "")+".scriptedOperation" : chainId+".ops";
+		    					
+		    					if(!automationList.contains(cleanedChainId)){
+			    					automationList.add(cleanedChainId);
+			    					if(chainId.startsWith("javascript")){
+				    					nbAutomationScripting ++;
+				    				}else{
+				    					nbAutomationChains ++;
+				    				}			    					
+			    				}
+			    				
+				    			userActionsList.add(cleanedActionId);
+				    			nbUserActions ++;
+		    				}
+
+		    			}
+		    		}catch(Exception e){
+		    			logger.error("Error when getting Actions", e);
+		    		}
+		    		break;
+		    	case EXTENSIONPOINT_CHAIN :
+		    		try{
+		    			List<Chain> chains = extension.getChain();
+		    			for(Chain chain:chains){
+		    				String chainId = chain.getId();
+		    				String refChainId = chainId.startsWith("javascript.")? chainId.replace("javascript.", "")+".scriptedOperation" : chainId+".ops";
+
+		    				String chainIdForDot = GraphHelper.cleanUpForDot(chain.getId());
+		    						    				
+		    				//contextual graph
+	    					//skip this one if it's not in the list of Chains to display
+		    				boolean mainChainIsPartOfTheNodeList = true;
+		    				boolean secondChainIsPartOfTheNodeList = false;
+	    					if(nodeList != null && !nodeList.contains(chainIdForDot)){
+	    						mainChainIsPartOfTheNodeList = false;
+	    					}
+		    				
+		    				//handle the link between 2 Automation chains
+	    					if(chain.getOperation() != null){
+	    						for(org.nuxeo.jaxb.Component.Extension.Chain.Operation operation:chain.getOperation()){
+	    							if(("RunOperation").equals(operation.getId())){
+	    								for(org.nuxeo.jaxb.Component.Extension.Chain.Operation.Param param : operation.getParam()){
+	    									if(("id").equals(param.getName())){
+	    										if(param.getValue().contains(":")){
+	    											String exprPattern = "\"(.*)\":\"(.*)\"";
+	    											Pattern expR = Pattern.compile(exprPattern);
+	    											Matcher m = expR.matcher(param.getValue().trim().replace(" ", ""));
+	    						    				if (m.find( )) {
+	    						    						    						    					
+	    						    					if(nodeList == null || (nodeList != null && nodeList.contains(m.group(1))) || mainChainIsPartOfTheNodeList){
+	    						    						String cleanedSecondChain = GraphHelper.cleanUpForDot(m.group(1));
+	    						    						
+	    						    						secondChainIsPartOfTheNodeList = true;
+	    						    						if(!automationList.contains(cleanedSecondChain)){
+				    											
+				    					    					automationList.add(cleanedSecondChain);
+				    					    					if(chainId.startsWith("javascript")){
+				    						    					nbAutomationScripting ++;
+				    						    				}else{
+				    						    					nbAutomationChains ++;
+				    						    				}	
+				    					    					
+			    											}	    
+	    						    						
+	    						    					}
+	    						    					
+	    						    					if(nodeList == null || (nodeList != null && nodeList.contains(m.group(2))) || mainChainIsPartOfTheNodeList){	    						    			
+	    						    						String cleanedSecondChain = GraphHelper.cleanUpForDot(m.group(2));
+	    						    						
+	    						    						secondChainIsPartOfTheNodeList = true;
+	    						    						if(!automationList.contains(cleanedSecondChain)){
+				    											
+				    					    					automationList.add(cleanedSecondChain);
+				    					    					if(chainId.startsWith("javascript")){
+				    						    					nbAutomationScripting ++;
+				    						    				}else{
+				    						    					nbAutomationChains ++;
+				    						    				}
+				    					    					
+			    											}	
+	    						    					}
+	    						    					
+	    						    				}
+	    										}else{
+	    											if(nodeList == null || (nodeList != null && nodeList.contains(GraphHelper.cleanUpForDot(param.getValue()))) || mainChainIsPartOfTheNodeList){
+	    												String cleanedSecondChain = GraphHelper.cleanUpForDot(param.getValue());
+	    												secondChainIsPartOfTheNodeList = true;
+	    												
+		    											if(!automationList.contains(cleanedSecondChain)){
+			    											
+			    					    					automationList.add(cleanedSecondChain);
+			    					    					if(chainId.startsWith("javascript")){
+			    						    					nbAutomationScripting ++;
+			    						    				}else{
+			    						    					nbAutomationChains ++;
+			    						    				}
+			    					    					
+		    											}	    												
+	    											}
+	    										}
+	    									}
+	    								}
+	    							//handle the link between an Automation chain & scripting
+	    							}else if(operation.getId().startsWith("javascript.")){
+	    								if(nodeList == null || (nodeList != null && nodeList.contains(GraphHelper.cleanUpForDot(operation.getId()))) || mainChainIsPartOfTheNodeList){
+	    									String cleanedSecondChain = GraphHelper.cleanUpForDot(operation.getId());
+	    									secondChainIsPartOfTheNodeList = true;
+	    									
+											if(!automationList.contains(cleanedSecondChain)){
+												automationList.add(cleanedSecondChain);
+							    				nbAutomationScripting ++;	
+							    				
+											}
+	    								}
+	    							}
+	    						}
+	    					}
+	    					
+	    					if(!mainChainIsPartOfTheNodeList && !secondChainIsPartOfTheNodeList){
+	    						continue;
+	    					}
+	    					
+	    					if(!automationList.contains(chainIdForDot)){
+		    					
+		    					automationList.add(chainIdForDot);
+		    					if(chainId.startsWith("javascript")){
+			    					nbAutomationScripting ++;
+			    				}else{
+			    					nbAutomationChains ++;
+			    				}
+	    					}
+	    				}
+	    			}catch(Exception e){
+	    				logger.error("Error when getting Chains", e);
+	    			}
+	    			break;
+	    		case EXTENSIONPOINT_ROUTE_MODEL_IMPORTER :
+		    		List<TemplateResource> trList = extension.getTemplateResource();
+		    		for(TemplateResource tr : trList){
+		    			
+		    			entries = file.entries();
+		    	        while(entries.hasMoreElements()) {
+		    	            JarEntry entry = entries.nextElement();
+		    	            if (entry.getName().equals(tr.getPath())) {
+		    	                try(ZipInputStream zipIn = new ZipInputStream(file.getInputStream(entry))) {
+		    	                	ZipEntry zipEntry = zipIn.getNextEntry();
+		    	                	while (zipEntry != null) {
+		    	                        String filePath = outDirPath.toString() + File.separator + zipEntry.getName();
+		    	                        if (!zipEntry.isDirectory()) {
+		    	                            // if the entry is a file, extracts it
+		    	                            GraphHelper.extractFile(zipIn, filePath);
+		    	                        } else {
+		    	                            // if the entry is a directory, make the directory
+		    	                            File dir = new File(filePath);
+		    	                            dir.mkdir();
+		    	                        }
+		    	                        zipIn.closeEntry();
+		    	                        zipEntry = zipIn.getNextEntry();
+		    	                    }
+		    	                    zipIn.close();
+		    	                }
+		    	                break;
+		    	            }
+		    	        }
+		    			  
+		    		    //Get all the tasks under the Workflow folder
+		    		    File tasksFolder = new File(outDirPath.toString()+File.separator+tr.getId());
+		    		    
+		    			String[] tasks = tasksFolder.list(new FilenameFilter() {
+		    			  @Override
+		    			  public boolean accept(File current, String name) {
+		    			    return new File(current, name).isDirectory();	    
+		    			  }
+		    			});
+		    			
+		    			if(tasks != null){
+			    			for(String task: tasks){			    				
+			    				//Use task as the id of the node			    				
+				    			//Read the content of the document.xml
+				    			String xmlText = FileUtils.readFileToString(new File(outDirPath.toString()+File.separator+tr.getId()+File.separator+task+File.separator+"document.xml"));
+				    			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+				    			factory.setNamespaceAware(true);
+				    			DocumentBuilder db;
+								try {
+									db = factory.newDocumentBuilder();
+									InputStream in = new ByteArrayInputStream(xmlText.getBytes("UTF-8"));
+					    			Document doc = db.parse(in);
+					    			
+					    			//title
+					    			String title = "";
+					    			NodeList nodeTitle = doc.getElementsByTagName("dc:title");
+					    			if(nodeTitle != null && nodeTitle.getLength()>0){
+					    				title = nodeTitle.item(0).getTextContent();
+					    			}
+					    			
+					    			//description
+					    			String desc = "";
+					    			NodeList nodeDesc = doc.getElementsByTagName("dc:description");
+					    			if(nodeDesc != null && nodeDesc.getLength()>0){
+					    				desc = nodeDesc.item(0).getTextContent();
+					    			}
+					    			
+					    			//inputChain
+					    			String inputChain = "";
+					    			NodeList nodeIC = doc.getElementsByTagName("rnode:inputChain");
+					    			if(nodeIC != null && nodeIC.getLength()>0){
+					    				inputChain = GraphHelper.cleanUpForDot(nodeIC.item(0).getTextContent());
+					    				
+					    			}
+					    			
+					    			//outputChain
+					    			String outputChain = "";
+					    			NodeList nodeOC = doc.getElementsByTagName("rnode:outputChain");
+					    			if(nodeOC != null && nodeOC.getLength()>0){
+					    				outputChain = GraphHelper.cleanUpForDot(nodeOC.item(0).getTextContent());
+					    			}
+					    			
+					    			if(nodeList != null && !nodeList.contains(inputChain) && !nodeList.contains(outputChain)){
+			    						continue;
+			    					}
+					    			
+					    			if(!("").equals(inputChain) || !("").equals(outputChain)){
+					    				if(nodeList == null || (nodeList != null && nodeList.contains(inputChain))){
+						    				if(!("").equals(inputChain)){
+						    					if(!automationList.contains(inputChain)){
+							    					
+							    					if(inputChain.startsWith("javascript")){
+								    					nbAutomationScripting ++;
+								    				}else{
+								    					nbAutomationChains ++;
+								    				}
+							    					
+							    					automationList.add(inputChain);
+						    					
+							    					
+						    					}
+						    					
+						    				}
+					    				}
+					    				if(nodeList == null || (nodeList != null && nodeList.contains(outputChain))){
+						    				if(!("").equals(outputChain)){
+						    					if(!automationList.contains(outputChain)){
+							    					
+							    					if(outputChain.startsWith("javascript")){
+								    					nbAutomationScripting ++;
+								    				}else{
+								    					nbAutomationChains ++;
+								    				}
+							    					
+							    					automationList.add(outputChain);
+						    					}
+						    				}
+					    				}
+					    				
+					    				if(nodeList != null && nodeList.isEmpty()){
+					    					continue;
+					    				}
+					    				
+					    				if(nodeList == null || (nodeList != null && nodeList.contains(outputChain)) || (nodeList != null && nodeList.contains(inputChain))){
+						    				if(!wfTasksList.contains(task)){
+						    					wfTasksList.add(task);
+						    					nbWfTasks ++;
+						    				}
+					    				}
+					    				
+					    			}					    			
+								} catch (ParserConfigurationException e) {
+									logger.error("Error while getting Worflow Tasks",e);
+								} catch (SAXException e) {
+									logger.error("Error while getting Worflow Tasks",e);
+								}
+			    			}
+		    			}			    						    			
+		    		}
+		    		break;
+	    	}
+	    }
+		
+		//Deal with the Event Handlers		
+		entries = file.entries();
+        while(entries.hasMoreElements()) {
+            JarEntry entry = entries.nextElement();
+            if (entry.getName().endsWith(".evt.xml")) {
+                try(InputStream is = file.getInputStream(entry)) {
+	    			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+	    			factory.setNamespaceAware(true);
+	    			DocumentBuilder db;
+	    			db = factory.newDocumentBuilder();
+	    			Document doc = db.parse(is);
+	    			
+	    			NodeList nodeId = doc.getElementsByTagName("events");
+	    			String eventHandlerId = nodeId.item(0).getAttributes().getNamedItem("id").getNodeValue();
+	    			String eventHandlerIdForDot = GraphHelper.cleanUpForDot(eventHandlerId);
+	    			eventHandlerIdForDot += eventHandlerIdForDot;
+	    			
+	    			NodeList nodeChainId = doc.getElementsByTagName("chain");
+	    			String chainId = nodeChainId.item(0).getTextContent();
+	    			String chainIdForDot = GraphHelper.cleanUpForDot(chainId);
+	    			
+					if(nodeList != null && !nodeList.contains(chainIdForDot)){
+						continue;
+					}
+
+					
+					eventsList.add(eventHandlerIdForDot);
+					nbEvents ++;
+
+					//Normally we won't go through this
+					//as we already parsed all the automation chains previously
+					if(!automationList.contains(chainIdForDot)){
+    					
+    					automationList.add(chainIdForDot);
+    					if(chainIdForDot.startsWith("javascript")){
+	    					nbAutomationScripting ++;
+	    				}else{
+	    					nbAutomationChains ++;
+	    				}
+    					
+    				}	    			
+                } catch (ParserConfigurationException e) {
+					logger.error("Error while getting Event Handlers", e);
+				} catch (SAXException e) {
+					logger.error("Error while getting Event Handlers", e);
+				}
+            }
+        }
+		
+    	if(nbUserActions>0) data.put("userActions", userActionsList);
+    	
+    	Collections.sort(automationList);
+    	Collections.sort(eventsList);
+    	Collections.sort(wfTasksList);
+    	
+    	if(nbAutomationChains >0 || nbAutomationScripting >0) data.put("automationChainsAndScripting", automationList);
+    	if(nbEvents>0) data.put("events", eventsList);
+    	if(nbWfTasks>0) data.put("wfTasks", wfTasksList);
+ 
+    	 // File output
+    	Path inputFilePath = Paths.get(outDirPath.toString(), "inputBusinessRulesText.txt");
+    	try(Writer txtFile = new FileWriter (inputFilePath.toFile())){
+    		template.process(data, txtFile);
+    	}
+    	
+    	Blob blob = new FileBlob(new File(inputFilePath.toString()), "text/plain");
+    	
+	    return blob;
 	}
 }

@@ -8,5 +8,16 @@
     point="operations" >
       <operation class="org.nuxeo.studioviz.GenerateContextualGraph" />
    </extension>
-
+ <extension target="org.nuxeo.ecm.core.operation.OperationServiceComponent"
+    point="operations" >
+      <operation class="org.nuxeo.studioviz.GenerateModelText" />
+   </extension>
+   <extension target="org.nuxeo.ecm.core.operation.OperationServiceComponent"
+    point="operations" >
+      <operation class="org.nuxeo.studioviz.GenerateViewText" />
+   </extension>
+   <extension target="org.nuxeo.ecm.core.operation.OperationServiceComponent"
+    point="operations" >
+      <operation class="org.nuxeo.studioviz.GenerateBusinessRulesText" />
+   </extension>
 </component>

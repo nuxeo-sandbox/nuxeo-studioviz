@@ -7,6 +7,7 @@ import javax.inject.Inject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.nuxeo.common.utils.FileUtils;
+import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.runtime.test.runner.Deploy;
 import org.nuxeo.runtime.test.runner.Features;
 import org.nuxeo.runtime.test.runner.FeaturesRunner;
@@ -48,5 +49,10 @@ public class TestGenerateGraph {
 		assertTrue("img file not generated",json.has("map"));			
 	}
 	
-	
+	@Test
+    public void testGenerateModelTestFromXML() throws Exception {
+		String studiovizFolderPath = FileUtils.getResourcePathFromContext("GraphViz/mgena-SANDBOX.jar");
+		Blob blob = studiovizservice.generateModelTextFromXML(studiovizFolderPath, null);
+		assertTrue("Blob file not generated",blob.getLength()>0);
+	}
 }

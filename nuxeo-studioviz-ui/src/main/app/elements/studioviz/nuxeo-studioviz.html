@@ -18,22 +18,30 @@
   <nx-connection id="nx"></nx-connection>
   <nuxeo-operation id="GenerateGraph" op="GenerateGraph" params="" response="{{response}}"></nuxeo-operation>
   <nuxeo-operation id="GenerateContextualGraph" op="GenerateContextualGraph" params="{{params}}" response="{{ctxResponse}}"></nuxeo-operation>
+  <nuxeo-operation id="GenerateModelText" op="GenerateModelText" params="" response="{{modelTextResponse}}"></nuxeo-operation>
+  <nuxeo-operation id="GenerateViewText" op="GenerateViewText" params="" response="{{viewTextResponse}}"></nuxeo-operation>
+  <nuxeo-operation id="GenerateBusinessRulesText" op="GenerateBusinessRulesText" params="" response="{{businessRulesTextResponse}}"></nuxeo-operation>
+
   <div id="modelFullscreen" class="bubbleBox">
 
       <div class="bubbleHeader">
         <h3>Data Model</h3>
         <paper-button id="modelFullscreen_button" raised on-tap="_toggleFullScreen" data-arg="model">Full Screen</paper-button>
+        <paper-button id="modelText_button" raised on-tap="_toggleTextFormat" data-arg="model">Text Format</paper-button>
       </div>
       <div class="bubbleHeader" style="overflow-x:scroll;">
         <table width="100%">
         <tr>
           <td class="center"/>
               <template is="dom-if" if="{{_isDefined(response)}}">
-                <img src="{{imgModelUrl}}" usemap="#M" />
+                <img id="imgModel" src="{{imgModelUrl}}" usemap="#M" />
                 <div inner-h-t-m-l="{{cmapxModel}}"></div>
               </template>
               <template is="dom-if" if="{{!_isDefined(response)}}">
-                <img src="/nuxeo/img/big_loading.gif" >
+                <img id="loadingModel" src="/nuxeo/img/big_loading.gif" >
+              </template>
+              <template is="dom-if" if="{{showModelTextResponse}}">
+              <paper-textarea class="left" id="textarea" label="" value="{{modelTextResponse::input}}" placeholder="{{placeholder}}"></paper-textarea>
               </template>
           </td>
         </tr>
@@ -47,17 +55,21 @@
       <div class="bubbleHeader">
         <h3>View</h3>
         <paper-button id="viewFullscreen_button" raised on-tap="_toggleFullScreen" data-arg="view">Full Screen</paper-button>
+        <paper-button id="viewText_button" raised on-tap="_toggleTextFormat" data-arg="view">Text Format</paper-button>
       </div>
       <div class="bubbleHeader" style="overflow-x:scroll;">
         <table width="100%">
         <tr>
           <td class="center"/>
               <template is="dom-if" if="{{_isDefined(response)}}">
-                <img src="{{imgViewUrl}}" usemap="#V" />
+                <img id="imgView" src="{{imgViewUrl}}" usemap="#V" />
                 <div inner-h-t-m-l="{{cmapxView}}"></div>
               </template>
               <template is="dom-if" if="{{!_isDefined(response)}}">
-                <img src="/nuxeo/img/big_loading.gif" >
+                <img id="loadingView" src="/nuxeo/img/big_loading.gif" >
+              </template>
+              <template is="dom-if" if="{{showViewTextResponse}}">
+              <paper-textarea class="left" id="textarea" label="" value="{{viewTextResponse::input}}" placeholder="{{placeholder}}"></paper-textarea>
               </template>
           </td>
         </tr>
@@ -70,25 +82,29 @@
       <div class="bubbleHeader">
         <h3>Business Rules</h3>
         <paper-button id="businessRulesFullscreen_button" raised on-tap="_toggleFullScreen" data-arg="businessRules">Full Screen</paper-button>
+        <paper-button id="businessRulesText_button" raised on-tap="_toggleTextFormat" data-arg="businessRules">Text Format</paper-button>
       </div>
       <div class="bubbleHeader" style="overflow-x:scroll;">
         <table width="100%">
           <tr>
-            <td style=""><paper-checkbox checked on-change="_checkUncheckAll"><span style="white-space:nowrap;"><b>Automation Chains & Scriptings</b></span></paper-checkbox></td>
+            <td style="" id="businessRulesCheckBoxesAll"><paper-checkbox checked on-change="_checkUncheckAll"><span style="white-space:nowrap;"><b>Automation Chains & Scriptings</b></span></paper-checkbox></td>
           </tr>
           <tr>
-            <td class="top">
+            <td class="top" id="businessRulesCheckBoxes">
               <template is="dom-repeat" items="{{automationList}}" as="automation">
                   <paper-checkbox checked on-change="_generateContextualGraph" graphType="businessRules" value="{{automation}}">{{automation}}</paper-checkbox><br/>
               </template>
             </td>
             <td class="center"/>
               <template is="dom-if" if="{{_isDefined(response)}}">
-                <img src="{{imgBusinessRulesUrl}}" usemap="#BL" />
+                <img id="imgBusinessRules" src="{{imgBusinessRulesUrl}}" usemap="#BL" />
                 <div inner-h-t-m-l="{{cmapxBusinessRules}}"></div>
               </template>
               <template is="dom-if" if="{{!_isDefined(response)}}">
-                <img src="/nuxeo/img/big_loading.gif" >
+                <img id="loadingBusinessRules" src="/nuxeo/img/big_loading.gif" >
+              </template>
+              <template is="dom-if" if="{{showBusinessRulesTextResponse}}">
+              <paper-textarea class="left" id="textarea" label="" value="{{businessRulesTextResponse::input}}" placeholder="{{placeholder}}"></paper-textarea>
               </template>
             </td>
           </tr>
@@ -152,6 +168,33 @@
           type: Object,
           notify: true,
           observer: '_ctxGraphGenerated'
+        },
+        modelTextResponse:{
+          type: Object,
+          value: {}
+        },
+        viewTextResponse:{
+          type: Object,
+          value: {}
+        },
+        businessRulesTextResponse:{
+          type: Object,
+          value: {}
+        },
+        showModelTextResponse:  {
+          type:Boolean,
+          value: false,
+          notify: true
+        },
+        showViewTextResponse:  {
+          type:Boolean,
+          value: false,
+          notify: true
+        },
+        showBusinessRulesTextResponse:  {
+          type:Boolean,
+          value: false,
+          notify: true
         }
       },
 
@@ -160,6 +203,10 @@
         isModelFullScreenMode = false;
         isViewFullScreenMode = false;
         isBusinessRulesFullScreenMode = false;
+
+        this.$.GenerateModelText.execute();
+        this.$.GenerateViewText.execute();
+        this.$.GenerateBusinessRulesText.execute();
       },
 
       _refresh: function(){
@@ -259,6 +306,44 @@
             jQuery("#businessRulesFullscreen_button").html("Full Screen");
             isBusinessRulesFullScreenMode = false;
           }
+        }
+      },
+
+      _toggleTextFormat: function(e){
+        var arg = e.target.getAttribute('data-arg');
+        if(arg === "model" && !this.showModelTextResponse){
+          this.showModelTextResponse = true;
+          jQuery("#modelText_button").html("Graphic Format");
+          jQuery("#imgModel").hide();
+          jQuery("#loadingModel").hide();
+        }else if(arg === "model" && this.showModelTextResponse){
+          this.showModelTextResponse = false;
+          jQuery("#modelText_button").html("Text Format");
+          jQuery("#imgModel").show();
+        }
+        else if(arg === "view" && !this.showViewTextResponse){
+          this.showViewTextResponse = true;
+          jQuery("#viewText_button").html("Graphic Format");
+          jQuery("#imgView").hide();
+            jQuery("#loadingView").hide();
+        }else if(arg === "view" && this.showViewTextResponse){
+          this.showViewTextResponse = false;
+          jQuery("#viewText_button").html("Text Format");
+          jQuery("#imgView").show();
+        }
+        else if(arg === "businessRules" && !this.showBusinessRulesTextResponse){
+          this.showBusinessRulesTextResponse = true;
+          jQuery("#businessRulesText_button").html("Graphic Format");
+          jQuery("#imgBusinessRules").hide();
+          jQuery("#loadingBusinessRules").hide();
+          jQuery("#businessRulesCheckBoxes").hide();
+          jQuery("#businessRulesCheckBoxesAll").hide();
+        }else if(arg === "businessRules" && this.showBusinessRulesTextResponse){
+          this.showBusinessRulesTextResponse = false;
+          jQuery("#businessRulesText_button").html("Text Format");
+          jQuery("#imgBusinessRules").show();
+          jQuery("#businessRulesCheckBoxes").show();
+          jQuery("#businessRulesCheckBoxesAll").show();
         }
       }
     });
