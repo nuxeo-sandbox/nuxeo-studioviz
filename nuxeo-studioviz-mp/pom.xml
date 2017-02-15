@@ -26,23 +26,7 @@
     </dependencyManagement>
 
     <dependencies>
-        <!-- Base distribution(s) for the MP -->
-        <dependency>
-            <groupId>org.nuxeo.ecm.distribution</groupId>
-            <artifactId>nuxeo-distribution-cap</artifactId>
-            <!-- <artifactId>nuxeo-distribution-coreserver</artifactId> -->
-            <!-- <artifactId>nuxeo-distribution-dm</artifactId> -->
-            <!-- <artifactId>nuxeo-distribution-dam</artifactId> -->
-            <!-- <artifactId>nuxeo-distribution-social-collaboration</artifactId> -->
-            <type>pom</type>
-        </dependency>
-
-        <!-- Additional bundles to be deployed by the MP -->
-        <!--dependency>
-            <groupId></groupId>
-            <artifactId></artifactId>
-            <version>${nuxeo.project.version}</version>
-        </dependency-->
+    
         <dependency>
           <groupId>org.nuxeo.studioviz</groupId>
           <artifactId>nuxeo-studioviz-operations</artifactId>

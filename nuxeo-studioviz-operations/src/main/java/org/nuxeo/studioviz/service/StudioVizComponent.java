@@ -15,6 +15,7 @@ import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -198,13 +199,28 @@ public class StudioVizComponent extends DefaultComponent implements StudioVizSer
 	    JsonObject json = new JsonObject();
 	    byte[] bytesEncoded;
 	   
-		bytesEncoded = Base64.encodeBase64(imgFileBlob.getByteArray());			
-		json.addProperty("img", "data:image/png;base64,"+new String(bytesEncoded));
+		bytesEncoded = Base64.encodeBase64(imgFileBlob.getByteArray());	
+		
+		//build the img path
+	    CodeSource src = Framework.class.getProtectionDomain().getCodeSource();
+	    String imgPath = null;
+	    if (src != null) {
+	    	imgPath = src.getLocation().toString();
+	    	String path[] = imgPath.split(File.separator);
+	    	imgPath = imgPath.replace(path[path.length-2]+File.separator, "");
+	    	imgPath = imgPath.replace(File.separator+path[path.length-1], "");
+	    	imgPath = imgPath+File.separator+"nuxeo.war"+File.separator+"studioviz"+File.separator+img;
+	    	imgPath = imgPath.replace("file:","");
+	    }
+	    imgFileBlob.transferTo(new File(imgPath));
+	    json.addProperty("img", "/nuxeo/studioviz/"+img);
+		//json.addProperty("img", "data:image/png;base64,"+new String(bytesEncoded));
 		
 	    String map = cmapFileBlob.getString();
 	    json.addProperty("map", URLEncoder.encode(map,"UTF-8"));
 	    
 	    //Delete temporary directory
+	    
 	    GraphHelper.deleteFolder(imgFileBlob.getFile().getParentFile());
 	    
 	    return json;
@@ -246,6 +262,7 @@ public class StudioVizComponent extends DefaultComponent implements StudioVizSer
 	    					//Schemas starting with var_ are reserved for worfklow tasks
 	    					//Schemas ending with _cv are reserved for content views
 	    					if(schemaName != null && !schemaName.startsWith("var_") && !schemaName.endsWith("_cv") && !schemasList.contains(schemaName)){
+	    						
 	    						JsonObject schemaJson = new JsonObject();
 	    						schemaJson.addProperty("name", schemaName+"_sh");
 	    						schemaJson.addProperty("featureName", schemaName+".ds");
@@ -271,14 +288,16 @@ public class StudioVizComponent extends DefaultComponent implements StudioVizSer
 	    				for(Doctype docType : docTypeList){
 	    					String docTypeName = docType.getName();
 	    					//DocType ending with _cv are created for content views
-	    					if(docTypeName != null && !docTypeName.endsWith("_cv")){
+	    					if(docTypeName != null && !docTypeName.endsWith("_cv") && !docTypeName.equals("null")){
 	    						JsonObject docTypeJson = new JsonObject();
 	    						docTypeJson.addProperty("name", docTypeName);
 	    						docTypeJson.addProperty("featureName", docTypeName+".doc");
 	    						docTypeJson.addProperty("labelName", docTypeName);
 	    						docTypeJson.addProperty("color", "#1CA5FC");
 	    						nodes.add(gson.toJson(docTypeJson));
-	    						transitions.add(docTypeName+"->"+docType.getExtends()+"[label=\"inherits\"]");
+	    						if(!docType.getExtends().equals("null")){
+	    							transitions.add(docTypeName+"->"+docType.getExtends()+"[label=\"inherits\"]");
+	    						}
 	    						
 	    						List<Doctype.Schema> extraSchemas = docType.getSchema();
 	    						for(Doctype.Schema extraSchema: extraSchemas){
@@ -327,7 +346,7 @@ public class StudioVizComponent extends DefaultComponent implements StudioVizSer
 	    						docTypes += docTypeName;
 	    						nbDocTypes ++;
 
-	    						if(!docTypesList.contains(docType.getExtends())){
+	    						if(!docTypesList.contains(docType.getExtends()) && !docType.getExtends().equals("null")){
 	    							JsonObject extraDocTypeJson = new JsonObject();
 	    							extraDocTypeJson.addProperty("name", docType.getExtends());
 	    							extraDocTypeJson.addProperty("featureName", docType.getExtends()+".doc");

@@ -17,7 +17,7 @@
         <artifactId>nuxeo-distribution</artifactId>
         <scope>import</scope>
         <type>pom</type>
-        <version>8.1</version>
+        <version>8.10</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -88,10 +88,6 @@
       <groupId>org.nuxeo.ecm.automation</groupId>
       <artifactId>nuxeo-automation-test</artifactId>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>commons-logging</groupId>
-      <artifactId>commons-logging</artifactId>
     </dependency>
     <dependency>
       <groupId>org.nuxeo.ecm.platform</groupId>
