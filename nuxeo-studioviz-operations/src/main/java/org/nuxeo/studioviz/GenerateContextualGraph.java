@@ -59,9 +59,19 @@ public class GenerateContextualGraph {
 		    if (src != null) {
 		    	url = src.getLocation().toString();
 		    	String path[] = url.split(File.separator);
-		    	url = url.replace(path[path.length-1], studioJar);
+		    	url = url.replace(File.separator+path[path.length-1], "");
 		    	url = url.replace("file:","");
-		    }
+		    	
+		    	File folder = new File(url);
+		    	File[] listOfFiles = folder.listFiles();
+
+	    	    for (int i = 0; i < listOfFiles.length; i++) {
+	    	      if (listOfFiles[i].isFile() && listOfFiles[i].getName().startsWith(studioJar.replace(".jar", ""))) {
+	    	        url = url+File.separator+listOfFiles[i].getName();
+	    	        break;
+	    	      }
+	    	    }	    		    	 	
+		    }	
 		    
 		    List<String> nodeList = new ArrayList<String>();
 		    if(!("").equals(nodes)){
