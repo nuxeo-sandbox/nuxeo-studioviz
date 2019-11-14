@@ -1,0 +1,8 @@
+nifest-Version: 1.0
+Bundle-Vendor: Nuxeo
+Nuxeo-RequiredBy: org.nuxeo.ecm.war
+Bundle-Version: 0.0.1
+Bundle-Name: Nuxeo StudioViz
+Bundle-ManifestVersion: 1
+Bundle-SymbolicName: org.nuxeo.studioviz;singleton:=true
+Nuxeo-Component: OSGI-INF/extensions.xml

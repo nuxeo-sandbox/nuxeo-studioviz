@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<component name="nuxeo.studioviz.component" version="1.0.0">
+    <extension target="org.nuxeo.ecm.platform.WebResources" point="resources">
+        <resource name="nuxeo-studioviz-bundle.html" type="import" shrinkable="false">
+            <uri>/ui/nuxeo-studioviz-bundle.html</uri>
+        </resource>
+    </extension>
+    <extension target="org.nuxeo.ecm.platform.WebResources" point="bundles">
+    <bundle name="web-ui">
+        <resources append="true">
+            <resource>nuxeo-studioviz-bundle.html</resource>
+        </resources>
+    </bundle>
+    </extension>
+</component>

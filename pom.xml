@@ -3,27 +3,27 @@
   <parent>
     <groupId>org.nuxeo.ecm.distribution</groupId>
     <artifactId>nuxeo-distribution</artifactId>
-    <version>8.10</version>
+    <version>10.10</version>
   </parent>
   <groupId>org.nuxeo.studioviz</groupId>
-  <artifactId>nuxeo-studioviz-parent</artifactId>
+  <artifactId>qualitified-studioviz-parent</artifactId>
   <version>1.0-SNAPSHOT</version>
-  <name>Nuxeo StudioViz Parent</name>
-  <description>Nuxeo StudioViz POM</description>
+  <name>Qualitified StudioViz Parent</name>
+  <description>Qualitified StudioViz POM</description>
   <packaging>pom</packaging>
 
   <properties>
       <nuxeo.project.version>${project.version}</nuxeo.project.version>
-      <nuxeo.version>8.10</nuxeo.version>
-      <nuxeo.distribution.version>8.10</nuxeo.distribution.version>
+      <nuxeo.version>10.10</nuxeo.version>
+      <nuxeo.distribution.version>10.10</nuxeo.distribution.version>
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
       <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
   </properties>
 
   <modules>
-    <module>nuxeo-studioviz-operations</module>
-    <module>nuxeo-studioviz-ui</module>
-    <module>nuxeo-studioviz-mp</module>
+    <module>qualitified-studioviz-operations</module>
+    <module>qualitified-studioviz-ui</module>
+    <module>qualitified-studioviz-mp</module>
   </modules>
 
   <dependencyManagement>
@@ -37,17 +37,17 @@
           </dependency>
           <dependency>
               <groupId>org.nuxeo.studioviz</groupId>
-              <artifactId>nuxeo-grapviz-operations</artifactId>
+              <artifactId>qualitified-grapviz-operations</artifactId>
               <version>${nuxeo.project.version}</version>
           </dependency>
           <dependency>
               <groupId>org.nuxeo.studioviz</groupId>
-              <artifactId>nuxeo-studioviz-ui</artifactId>
+              <artifactId>qualitified-studioviz-ui</artifactId>
               <version>${nuxeo.project.version}</version>
           </dependency>
           <dependency>
               <groupId>org.nuxeo.studioviz</groupId>
-              <artifactId>nuxeo-studioviz-mp</artifactId>
+              <artifactId>qualitified-studioviz-mp</artifactId>
               <version>${nuxeo.project.version}</version>
           </dependency>
       </dependencies>

@@ -1,0 +1,20 @@
+<!--
+***
+CUSTOM CODE SPACE
+***
+Use this file to put any custom code you want to deploy on top of Studio's automatically generated configuration.
+-->
+<!-- Contribution of element 'nuxeo-search-form' for slot 'DRAWER_PAGES' -->
+<!-- Contribution of element 'nuxeo-menu-item' for slot 'ADMINISTRATION_MENU' -->
+<link rel="import" href="elements/studioviz/nuxeo-studioviz.html">
+<nuxeo-slot-content name="StudioViz" slot="ADMINISTRATION_MENU" order="1">
+    <template>
+        <nuxeo-menu-item label="Studio Configuration Visualization" name="StudioViz" route="administration:StudioViz"></nuxeo-menu-item>
+    </template>
+</nuxeo-slot-content>
+<!-- Contribution of element 'nuxeo-checkbox-aggregation' for slot 'ADMINISTRATION_PAGES' -->
+<nuxeo-slot-content name="StudioViz" slot="ADMINISTRATION_PAGES">
+    <template>
+        <nuxeo-studioviz name="StudioViz"></nuxeo-studioviz>
+    </template>
+</nuxeo-slot-content>
