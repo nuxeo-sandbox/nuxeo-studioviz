@@ -87,8 +87,7 @@ The Nuxeo Package is at nuxeo-studioviz-mp/target/nuxeo-studioviz-mp-1.0-SNAPSHO
 
 **Notice**: Here, we build offline (`-o`) and skip the cleanning of the cache (`-DskipCleanCache`). This saves a _lot_ of time and can be done because we already mde a full build of each part (nuxeo-studioviz-ui and nuxeo-studioviz-operations).
 
-## About Nuxeo
+# About Qualitified
 
-Nuxeo provides a modular, extensible Java-based [open source software platform for enterprise content management](http://www.nuxeo.com/en/products/ep) and packaged applications for [document management](http://www.nuxeo.com/en/products/document-management), [digital asset management](http://www.nuxeo.com/en/products/dam) and [case management](http://www.nuxeo.com/en/products/case-management). Designed by developers for developers, the Nuxeo platform offers a modern architecture, a powerful plug-in model and extensive packaging capabilities for building content applications.
-
-More information at <http://www.nuxeo.com/>
+At Qualitified we provide packages on top of nuxeo, in order to bring additional behaviors to the platform. We also do consultings on nuxeo projects by bringing our expertise on multiple levels (Data Models, Business Rules, Workflows, UI based on Polymer etc.)
+More information at <http://www.qualitified.com/>
