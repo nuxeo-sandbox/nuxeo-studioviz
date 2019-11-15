@@ -1,5 +1,4 @@
 # qualitified-studioviz
-===================
 <img src="screenshot1.png"/>
 This plug-in enables the visualization of the studio configuration based on graphviz.
 
