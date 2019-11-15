@@ -90,4 +90,4 @@ The Nuxeo Package is at nuxeo-studioviz-mp/target/nuxeo-studioviz-mp-1.0-SNAPSHO
 # About Qualitified
 
 At Qualitified we provide packages on top of nuxeo, in order to bring additional behaviors to the platform. We also do consultings on nuxeo projects by bringing our expertise on multiple levels (Data Models, Business Rules, Workflows, UI based on Polymer etc.)
-More information at <http://www.qualitified.com>
+More information at <www.qualitified.com>
