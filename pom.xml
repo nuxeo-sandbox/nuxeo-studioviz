@@ -23,7 +23,7 @@
   <modules>
     <module>qualitified-studioviz-operations</module>
     <module>qualitified-studioviz-ui</module>
-    <module>qualitified-studioviz-mp</module>
+    <module>qualitified-studioviz-package</module>
   </modules>
 
   <dependencyManagement>

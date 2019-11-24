@@ -1,6 +1,6 @@
 <!-- See documentation at http://doc.nuxeo.com/x/HgIz -->
 <package type="addon" name="nuxeo-studioviz" version="@VERSION@">
-  <title>Nuxeo StudioViz</title>
+  <title>Qualitified StudioViz</title>
   <description></description>
   <home-page>http://doc.nuxeo.com/</home-page>
   <vendor>Nuxeo</vendor>

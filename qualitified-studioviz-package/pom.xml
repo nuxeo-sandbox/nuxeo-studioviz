@@ -8,7 +8,7 @@
       <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>qualitified-studioviz-mp</artifactId>
+    <artifactId>qualitified-studioviz-package</artifactId>
     <packaging>zip</packaging>
     <name>Qualitified StudioViz Package</name>
 
