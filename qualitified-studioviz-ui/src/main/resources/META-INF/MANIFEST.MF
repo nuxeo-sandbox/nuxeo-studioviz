@@ -1,8 +1,8 @@
-nifest-Version: 1.0
+Manifest-Version: 1.0
 Bundle-Vendor: Qualitified
 Nuxeo-RequiredBy: org.nuxeo.ecm.war
 Bundle-Version: 0.0.1
 Bundle-Name: Qualitified StudioViz
 Bundle-ManifestVersion: 1
-Bundle-SymbolicName: org.nuxeo.studioviz;singleton:=true
+Bundle-SymbolicName: org.qualitified.studioviz;singleton:=true
 Nuxeo-Component: OSGI-INF/extensions.xml

@@ -5,9 +5,9 @@
     <artifactId>nuxeo-distribution</artifactId>
     <version>10.10</version>
   </parent>
-  <groupId>org.nuxeo.studioviz</groupId>
+  <groupId>org.qualitified.studioviz</groupId>
   <artifactId>qualitified-studioviz-parent</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0</version>
   <name>Qualitified StudioViz Parent</name>
   <description>Qualitified StudioViz POM</description>
   <packaging>pom</packaging>
@@ -36,17 +36,17 @@
               <version>${nuxeo.version}</version>
           </dependency>
           <dependency>
-              <groupId>org.nuxeo.studioviz</groupId>
+              <groupId>org.qualitified.studioviz</groupId>
               <artifactId>qualitified-grapviz-operations</artifactId>
               <version>${nuxeo.project.version}</version>
           </dependency>
           <dependency>
-              <groupId>org.nuxeo.studioviz</groupId>
+              <groupId>org.qualitified.studioviz</groupId>
               <artifactId>qualitified-studioviz-ui</artifactId>
               <version>${nuxeo.project.version}</version>
           </dependency>
           <dependency>
-              <groupId>org.nuxeo.studioviz</groupId>
+              <groupId>org.qualitified.studioviz</groupId>
               <artifactId>qualitified-studioviz-mp</artifactId>
               <version>${nuxeo.project.version}</version>
           </dependency>
