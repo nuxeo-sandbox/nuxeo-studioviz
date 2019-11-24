@@ -3,7 +3,7 @@
   <title>Qualitified StudioViz</title>
   <description></description>
   <home-page>http://doc.nuxeo.com/</home-page>
-  <vendor>Nuxeo</vendor>
+  <vendor>Qualitified</vendor>
   <installer restart="true" />
   <uninstaller restart="true" />
   <!-- <hotreload-support>false</hotreload-support> -->

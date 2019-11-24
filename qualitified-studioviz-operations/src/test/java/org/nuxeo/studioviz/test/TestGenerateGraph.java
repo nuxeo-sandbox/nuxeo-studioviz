@@ -18,7 +18,7 @@ import com.google.gson.JsonObject;
 
 @RunWith(FeaturesRunner.class)
 @Features(RuntimeFeature.class)
-@Deploy({"org.nuxeo.ecm.platform.commandline.executor", "org.nuxeo.connect.client","nuxeo-studioviz"})
+@Deploy({"org.nuxeo.ecm.platform.commandline.executor", "org.nuxeo.connect.client","qualitified-studioviz"})
 
 public class TestGenerateGraph {
 	

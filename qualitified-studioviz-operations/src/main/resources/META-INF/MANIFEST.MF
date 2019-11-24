@@ -1,14 +1,14 @@
 Manifest-Version: 1.0
-Bundle-SymbolicName: nuxeo-studioviz
-Bundle-Name: Nuxeo StudioViz Operations
+Bundle-SymbolicName: qualitified-studioviz
+Bundle-Name: Qualitified StudioViz Operations
 Bundle-Version: 1.0.qualifier
 Bundle-ClassPath: .
 Bundle-ActivationPolicy: lazy
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ManifestVersion: 2
-Bundle-Vendor: Nuxeo
+Bundle-Vendor: Qualitified
 Nuxeo-Component: OSGI-INF/extensions/graphvizcmd.xml,OSGI-INF/extensio
- ns/org.nuxeo.studioviz.operations.xml,OSGI-INF/extensions/org.nuxeo.s
- tudioviz.service.GraphVizService.xml,OSGI-INF/extensions/org.nuxeo.st
+ ns/org.qualitified.studioviz.operations.xml,OSGI-INF/extensions/org.qualitified.s
+ tudioviz.service.GraphVizService.xml,OSGI-INF/extensions/org.qualitified.st
  udioviz.service.StudioVizService.xml
 
