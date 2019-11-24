@@ -1,0 +1,80 @@
+<dom-module id="qualitified-studioviz" assetpath="qualitified-studioviz/">
+    <template>
+        <style>
+    .flex {
+      @apply --layout-flex;
+    }
+    paper-listbox {
+      @apply --layout-horizontal;
+      --paper-listbox-background-color: transparent;
+      padding: 0;
+    }
+  </style>
+        <nuxeo-operation id="GenerateGraph" op="GenerateGraph" params=""></nuxeo-operation>
+        <nuxeo-page>
+            <div slot="header">
+                <span class="flex">Studio Configuration</span>
+            </div>
+            <div slot="tabs">
+                <paper-listbox selected="{{selected}}" attr-for-selected="name">
+                    <nuxeo-page-item name="data-model" label="Data Model"></nuxeo-page-item>
+                    <nuxeo-page-item name="business-rule" label="Business Rules"></nuxeo-page-item>
+                </paper-listbox>
+            </div>
+            <div>
+                <iron-pages selected="[[selected]]" attr-for-selected="name" selected-attribute="visible">
+                    <nuxeo-card name="data-model">
+                        <template is="dom-if" if="{{_isDefined(response)}}">
+                            <img id="imgModel" src="{{imgModelUrl}}" />
+                        </template>
+                    </nuxeo-card>
+                    <nuxeo-card name="business-rule">
+                        <template is="dom-if" if="{{_isDefined(response)}}">
+                            <img id="imgBusinessRules" src="{{imgBusinessRulesUrl}}" />
+                        </template>
+                    </nuxeo-card>
+                </iron-pages>
+            </div>
+        </nuxeo-page>
+    </template>
+    <script>
+    Polymer({
+      is: 'qualitified-studioviz',
+      properties: {
+        params: {
+          type:Object,
+          value: {}
+        },
+        imgModelUrl: {
+          type:String,
+          value: ''
+        },
+        imgBusinessRulesUrl: {
+          type:String,
+          value: ''
+        },
+        response:{
+          type: Object,
+          notify: true
+        },
+        selected: String
+      },
+      ready: function () {
+        this.selected="data-model";
+        this.$.GenerateGraph.execute().then(function(response){
+          this.response = response;
+        }.bind(this));
+      },
+      _isDefined: function(response) {
+        if ((typeof response !== 'undefined') && (response !== '') && (response !== null)) {
+          json = response;
+          this.imgModelUrl = json.model.img;
+          this.imgBusinessRulesUrl = json.businessRules.img;
+          return true;
+        } else {
+          return false;
+        }
+      }
+    });
+</script>
+</dom-module>

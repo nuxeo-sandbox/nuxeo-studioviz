@@ -21,7 +21,10 @@ Assuming `maven` is correctly setup on your computer go under the qualitified-st
 mvn clean install
 ```
 
-The Nuxeo Package is at qualitified-studioviz-mp/target/qualitified-studioviz-mp-1.0-SNAPSHOT.zip and can be installed on your Nuxeo Server.
+TheNuxeo Package is at qualitified-studioviz-mp/target/qualitified-studioviz-mp-1.0-SNAPSHOT.zip and can be installed on your Nuxeo Server.
+
+## nuxeo.conf
+Set the variable `studio.artifact.id=Your_Studio_Project_ArtifactID`
 
 # About Qualitified
 

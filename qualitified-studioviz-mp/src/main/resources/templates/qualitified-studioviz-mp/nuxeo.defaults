@@ -1,0 +1,8 @@
+## Edit this file to customize your configuration ##
+qualitified-studioviz-mp.target=
+
+# Set list of templates to include, comma separated values.
+nuxeo.template.includes=common
+
+# org.nuxeo.ecm.instance.description=Qualitified Studioviz Package
+studio.artifact.id=your-studio.artifact.id
